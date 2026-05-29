@@ -216,4 +216,4 @@ expense-tracker/
 
 ## License
 
-MIT
+MIT.
