@@ -62,3 +62,11 @@ export function randomCategoryColor() {
   const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#A78BFA', '#F472B6', '#FB923C', '#34D399', '#60A5FA'];
   return colors[Math.floor(Math.random() * colors.length)];
 }
+
+export function resolveCategory(expense, categoryMap) {
+  return categoryMap[expense.categoryId] || {
+    label: expense.categoryLabel || 'Unknown',
+    icon: expense.categoryIcon || '📦',
+    color: '#94A3B8',
+  };
+}

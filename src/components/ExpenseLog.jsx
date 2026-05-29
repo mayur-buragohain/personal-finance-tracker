@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
-import { deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
-import { formatINR, formatDisplayDate } from '../utils/helpers';
+import { deleteDoc } from 'firebase/firestore';
+import { expenseDoc } from '../utils/paths';
+import { formatINR, formatDisplayDate, resolveCategory } from '../utils/helpers';
 
 const SWIPE_THRESHOLD = 80;
 
-export default function ExpenseLog({ user, expenses, categories }) {
+export default function ExpenseLog({ authUid, profileId, expenses, categories }) {
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
   const [deletingId, setDeletingId] = useState(null);
   const swipeState = useRef({ id: null, startX: 0, currentX: 0 });
@@ -15,7 +15,7 @@ export default function ExpenseLog({ user, expenses, categories }) {
     setDeletingId(expense.docId);
 
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'expenses', expense.docId));
+      await deleteDoc(expenseDoc(authUid, profileId, expense.docId));
     } catch (err) {
       console.error('Failed to delete expense:', err);
     } finally {
@@ -62,7 +62,7 @@ export default function ExpenseLog({ user, expenses, categories }) {
         <div className="empty-state">
           <span className="empty-icon">📭</span>
           <h2>No expenses yet</h2>
-          <p>Add your first expense from the Add tab.</p>
+          <p>Add your first expense from the Home tab.</p>
         </div>
       </section>
     );
@@ -73,11 +73,7 @@ export default function ExpenseLog({ user, expenses, categories }) {
       <p className="panel-hint">Swipe left or tap ✕ to delete</p>
       <ul className="expense-list">
         {expenses.map((expense) => {
-          const category = categoryMap[expense.categoryId] || {
-            icon: '📦',
-            label: 'Unknown',
-            color: '#94A3B8',
-          };
+          const category = resolveCategory(expense, categoryMap);
           const isDeleting = deletingId === expense.docId;
 
           return (
@@ -97,7 +93,9 @@ export default function ExpenseLog({ user, expenses, categories }) {
                 </div>
                 <div className="expense-details">
                   <span className="expense-category">{category.label}</span>
-                  {expense.note && <span className="expense-note">{expense.note}</span>}
+                  {expense.tagLabel && (
+                    <span className="expense-tag">{expense.tagLabel}</span>
+                  )}
                   <span className="expense-date">{formatDisplayDate(expense.date)}</span>
                 </div>
                 <span className="expense-amount">{formatINR(expense.amount)}</span>

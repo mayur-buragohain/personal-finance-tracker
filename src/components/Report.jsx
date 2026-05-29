@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { formatINR, formatDisplayDate, formatMonthLabel, monthKey, todayISO } from '../utils/helpers';
+import { formatINR, formatDisplayDate, formatMonthLabel, monthKey, resolveCategory, todayISO } from '../utils/helpers';
 
 export default function Report({ expenses, categories }) {
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
@@ -25,15 +25,20 @@ export default function Report({ expenses, categories }) {
 
   const categoryBreakdown = useMemo(() => {
     const totals = {};
+    const meta = {};
+
     monthExpenses.forEach((e) => {
       totals[e.categoryId] = (totals[e.categoryId] || 0) + e.amount;
+      if (!meta[e.categoryId]) {
+        meta[e.categoryId] = resolveCategory(e, categoryMap);
+      }
     });
 
     return Object.entries(totals)
       .map(([id, amount]) => ({
         id,
         amount,
-        category: categoryMap[id] || { label: 'Unknown', icon: '📦', color: '#94A3B8' },
+        category: meta[id],
       }))
       .sort((a, b) => b.amount - a.amount);
   }, [monthExpenses, categoryMap]);
@@ -147,10 +152,7 @@ export default function Report({ expenses, categories }) {
             <h2 className="section-title">Top 5 Expenses</h2>
             <ul className="top-expenses-list">
               {topExpenses.map((expense, index) => {
-                const category = categoryMap[expense.categoryId] || {
-                  icon: '📦',
-                  label: 'Unknown',
-                };
+                const category = resolveCategory(expense, categoryMap);
                 return (
                   <li key={expense.docId} className="top-expense-row">
                     <span className="top-rank">#{index + 1}</span>
@@ -158,7 +160,6 @@ export default function Report({ expenses, categories }) {
                       <span className="top-expense-cat">
                         {category.icon} {category.label}
                       </span>
-                      {expense.note && <span className="top-expense-note">{expense.note}</span>}
                       <span className="top-expense-date">{formatDisplayDate(expense.date)}</span>
                     </div>
                     <span className="top-expense-amount">{formatINR(expense.amount)}</span>

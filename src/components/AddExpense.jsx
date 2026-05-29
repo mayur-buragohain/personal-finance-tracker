@@ -1,53 +1,92 @@
-import { useState } from 'react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
+import { useEffect, useState } from 'react';
+import { addDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { addCategory } from '../utils/categories';
+import { addTag } from '../utils/tags';
+import { expensesCollection, tagsCollection } from '../utils/paths';
 import { slugify, randomCategoryColor, todayISO } from '../utils/helpers';
 
-export default function AddExpense({ user, categories }) {
+export default function AddExpense({ authUid, profileId, categories }) {
+  const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [note, setNote] = useState('');
-  const [date, setDate] = useState(todayISO());
+  const [tagId, setTagId] = useState('');
+  const [tags, setTags] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryEmoji, setNewCategoryEmoji] = useState('📌');
   const [categoryError, setCategoryError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [showTagModal, setShowTagModal] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [tagError, setTagError] = useState('');
+  const [addingTag, setAddingTag] = useState(false);
+
+  useEffect(() => {
+    if (!categoryId) {
+      setTags([]);
+      return;
+    }
+
+    const unsubscribe = onSnapshot(
+      tagsCollection(authUid, profileId, categoryId),
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => d.data());
+        items.sort((a, b) => a.label.localeCompare(b.label));
+        setTags(items);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [authUid, profileId, categoryId]);
 
   const handleAmountChange = (e) => {
     const value = e.target.value;
     if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
       setAmount(value);
+      setSaved(false);
     }
   };
 
-  const handleAddExpense = async () => {
+  const handleSave = async () => {
     const parsedAmount = parseFloat(amount);
-    if (!parsedAmount || parsedAmount <= 0) return;
-    if (!categoryId) return;
+    if (!parsedAmount || parsedAmount <= 0 || !categoryId) return;
+
+    const category = categories.find((c) => c.id === categoryId);
+    if (!category) return;
 
     setSaving(true);
-    setSuccessMessage('');
+    setSaved(false);
 
     try {
-      const expensesRef = collection(db, 'users', user.uid, 'expenses');
-      await addDoc(expensesRef, {
+      const expense = {
         amount: parsedAmount,
-        categoryId,
-        note: note.trim(),
+        categoryId: category.id,
+        categoryLabel: category.label,
+        categoryIcon: category.icon,
         date,
         createdAt: serverTimestamp(),
-      });
+      };
+
+      if (tagId) {
+        const tag = tags.find((t) => t.id === tagId);
+        if (tag) {
+          expense.tagId = tag.id;
+          expense.tagLabel = tag.label;
+        }
+      }
+
+      await addDoc(expensesCollection(authUid, profileId), expense);
 
       setAmount('');
-      setNote('');
+      setCategoryId('');
+      setTagId('');
       setDate(todayISO());
-      setSuccessMessage('Expense added!');
-      setTimeout(() => setSuccessMessage(''), 2000);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      console.error('Failed to add expense:', err);
+      console.error('Failed to save expense:', err);
     } finally {
       setSaving(false);
     }
@@ -65,13 +104,13 @@ export default function AddExpense({ user, categories }) {
     }
 
     const id = slugify(label);
-    const exists = categories.some((c) => c.id === id);
-    if (exists) {
+    if (categories.some((c) => c.id === id)) {
       setCategoryError('Category already exists');
       return;
     }
 
     setCategoryError('');
+    setAddingCategory(true);
 
     try {
       const category = {
@@ -80,23 +119,85 @@ export default function AddExpense({ user, categories }) {
         icon: newCategoryEmoji.trim(),
         color: randomCategoryColor(),
       };
-      await addCategory(user.uid, category);
+      await addCategory(authUid, profileId, category);
       setCategoryId(id);
+      setTagId('');
       setNewCategoryName('');
       setNewCategoryEmoji('📌');
       setShowCategoryModal(false);
+      setSaved(false);
     } catch (err) {
       setCategoryError('Failed to create category');
       console.error(err);
+    } finally {
+      setAddingCategory(false);
     }
   };
 
-  const canSubmit = amount && parseFloat(amount) > 0 && categoryId && !saving;
+  const handleCreateTag = async () => {
+    const label = newTagName.trim();
+    if (!label) {
+      setTagError('Enter a tag name');
+      return;
+    }
+
+    const id = slugify(label);
+    if (tags.some((t) => t.id === id)) {
+      setTagError('Tag already exists for this category');
+      return;
+    }
+
+    setTagError('');
+    setAddingTag(true);
+
+    try {
+      const tag = { id, label };
+      await addTag(authUid, profileId, categoryId, tag);
+      setTagId(id);
+      setNewTagName('');
+      setShowTagModal(false);
+      setSaved(false);
+    } catch (err) {
+      setTagError('Failed to create tag');
+      console.error(err);
+    } finally {
+      setAddingTag(false);
+    }
+  };
+
+  const openCategoryModal = () => {
+    setCategoryError('');
+    setNewCategoryName('');
+    setNewCategoryEmoji('📌');
+    setShowCategoryModal(true);
+  };
+
+  const openTagModal = () => {
+    setTagError('');
+    setNewTagName('');
+    setShowTagModal(true);
+  };
+
+  const canSave = amount && parseFloat(amount) > 0 && categoryId && !saving;
 
   return (
-    <section className="panel add-expense fade-in">
+    <section className="landing fade-in">
+      <div className="field-group field-group--centered">
+        <label htmlFor="date" className="field-label">Date</label>
+        <input
+          id="date"
+          type="date"
+          className="text-input date-input landing-control"
+          value={date}
+          onChange={(e) => {
+            setDate(e.target.value);
+            setSaved(false);
+          }}
+        />
+      </div>
+
       <div className="amount-section">
-        <label htmlFor="amount" className="field-label">Amount (₹)</label>
+        <label htmlFor="amount" className="field-label">Amount</label>
         <div className="amount-input-wrap">
           <span className="currency-symbol">₹</span>
           <input
@@ -112,68 +213,75 @@ export default function AddExpense({ user, categories }) {
         </div>
       </div>
 
-      <div className="field-group">
-        <span className="field-label">Category</span>
-        <div className="category-grid">
+      <div className="field-group field-group--centered">
+        <label htmlFor="category" className="field-label">Category</label>
+        <select
+          id="category"
+          className="text-input select-input landing-control"
+          value={categoryId}
+          onChange={(e) => {
+            setCategoryId(e.target.value);
+            setTagId('');
+            setSaved(false);
+          }}
+        >
+          <option value="">Select category</option>
           {categories.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              className={`category-chip ${categoryId === cat.id ? 'selected' : ''}`}
-              style={{ '--cat-color': cat.color }}
-              onClick={() => setCategoryId(cat.id)}
-            >
-              <span className="category-icon">{cat.icon}</span>
-              <span className="category-label">{cat.label}</span>
-            </button>
+            <option key={cat.id} value={cat.id}>
+              {cat.icon} {cat.label}
+            </option>
           ))}
+        </select>
+        <button
+          type="button"
+          className="add-category-link"
+          onClick={openCategoryModal}
+        >
+          + Add new category
+        </button>
+      </div>
+
+      {categoryId && (
+        <div className="field-group field-group--centered">
+          <label htmlFor="tag" className="field-label">Tag</label>
+          <select
+            id="tag"
+            className="text-input select-input landing-control"
+            value={tagId}
+            onChange={(e) => {
+              setTagId(e.target.value);
+              setSaved(false);
+            }}
+          >
+            <option value="">No tag</option>
+            {tags.map((tag) => (
+              <option key={tag.id} value={tag.id}>
+                {tag.label}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
-            className="category-chip add-new"
-            onClick={() => setShowCategoryModal(true)}
+            className="add-category-link"
+            onClick={openTagModal}
           >
-            <span className="category-icon">➕</span>
-            <span className="category-label">Add New</span>
+            + Add new tag
           </button>
         </div>
-      </div>
-
-      <div className="field-group">
-        <label htmlFor="note" className="field-label">Note (optional)</label>
-        <input
-          id="note"
-          type="text"
-          className="text-input"
-          placeholder="What was this for?"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          maxLength={120}
-        />
-      </div>
-
-      <div className="field-group">
-        <label htmlFor="date" className="field-label">Date</label>
-        <input
-          id="date"
-          type="date"
-          className="text-input date-input"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-      </div>
-
-      <button
-        type="button"
-        className="primary-btn"
-        disabled={!canSubmit}
-        onClick={handleAddExpense}
-      >
-        {saving ? 'Adding…' : 'Add Expense'}
-      </button>
-
-      {successMessage && (
-        <p className="success-toast" role="status">{successMessage}</p>
       )}
+
+      <div className="landing-actions">
+        <button
+          type="button"
+          className="primary-btn save-btn landing-control"
+          disabled={!canSave}
+          onClick={handleSave}
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+
+        {saved && <p className="success-toast" role="status">Saved</p>}
+      </div>
 
       {showCategoryModal && (
         <div className="modal-overlay" onClick={() => setShowCategoryModal(false)}>
@@ -186,24 +294,24 @@ export default function AddExpense({ user, categories }) {
             <div className="sheet-handle" />
             <h2 id="new-category-title" className="sheet-title">New Category</h2>
 
-            <div className="field-group">
+            <div className="field-group field-group--centered">
               <label htmlFor="emoji" className="field-label">Emoji</label>
               <input
                 id="emoji"
                 type="text"
-                className="text-input emoji-input"
+                className="text-input emoji-input landing-control"
                 value={newCategoryEmoji}
                 onChange={(e) => setNewCategoryEmoji(e.target.value)}
                 maxLength={4}
               />
             </div>
 
-            <div className="field-group">
+            <div className="field-group field-group--centered">
               <label htmlFor="cat-name" className="field-label">Name</label>
               <input
                 id="cat-name"
                 type="text"
-                className="text-input"
+                className="text-input landing-control"
                 placeholder="e.g. Pet Care"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
@@ -224,9 +332,62 @@ export default function AddExpense({ user, categories }) {
               <button
                 type="button"
                 className="primary-btn"
+                disabled={addingCategory}
                 onClick={handleCreateCategory}
               >
-                Create
+                {addingCategory ? 'Adding…' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTagModal && (
+        <div className="modal-overlay" onClick={() => setShowTagModal(false)}>
+          <div
+            className="bottom-sheet slide-up"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="new-tag-title"
+          >
+            <div className="sheet-handle" />
+            <h2 id="new-tag-title" className="sheet-title">New Tag</h2>
+            <p className="sheet-subtitle">
+              For {categories.find((c) => c.id === categoryId)?.label}
+            </p>
+
+            <div className="field-group field-group--centered">
+              <label htmlFor="tag-name" className="field-label">Name</label>
+              <input
+                id="tag-name"
+                type="text"
+                className="text-input landing-control"
+                placeholder="e.g. Eat out"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                maxLength={40}
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && newTagName.trim() && handleCreateTag()}
+              />
+            </div>
+
+            {tagError && <p className="field-error">{tagError}</p>}
+
+            <div className="sheet-actions">
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setShowTagModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary-btn"
+                disabled={addingTag || !newTagName.trim()}
+                onClick={handleCreateTag}
+              >
+                {addingTag ? 'Adding…' : 'Add'}
               </button>
             </div>
           </div>

@@ -47,20 +47,75 @@
 /* Header */
 
 .app-header {
-  padding: 20px 20px 12px;
+  padding: 20px 20px 16px;
   text-align: center;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .app-header h1 {
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-.app-subtitle {
-  color: var(--text-secondary);
+.app-header-user {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 6px;
   font-size: 0.875rem;
-  margin-top: 2px;
+  color: var(--text-secondary);
+}
+
+.switch-user-btn {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  border-radius: 8px;
+  transition: background var(--transition), color var(--transition);
+}
+
+.switch-user-btn:hover {
+  background: rgba(108, 92, 231, 0.12);
+  color: var(--accent-hover);
+}
+
+/* User Select */
+
+.user-select {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+}
+
+.field-error--centered {
+  text-align: center;
+}
+
+.add-user-link {
+  align-self: center;
+  min-height: var(--tap-min);
+  padding: 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  transition: color var(--transition);
+}
+
+.add-user-link:hover {
+  color: var(--accent-hover);
+}
+
+.landing-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Main */
@@ -70,6 +125,72 @@
   overflow-y: auto;
   padding: 0 16px 16px;
   padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+.app-main--home {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 20px calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+}
+
+.field-group--centered {
+  align-items: center;
+}
+
+.field-group--centered .field-label {
+  text-align: center;
+}
+
+.landing-control {
+  width: 100%;
+  min-width: 180px;
+  max-width: 220px;
+}
+
+.field-group--centered .landing-control {
+  align-self: center;
+}
+
+.date-input.landing-control {
+  text-align: center;
+}
+
+.add-category-link {
+  align-self: center;
+  min-height: var(--tap-min);
+  padding: 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  transition: color var(--transition);
+}
+
+.add-category-link:hover {
+  color: var(--accent-hover);
+}
+
+.bottom-sheet .field-group {
+  align-items: center;
+}
+
+.bottom-sheet .field-label {
+  text-align: center;
+}
+
+.bottom-sheet .field-error {
+  text-align: center;
+}
+
+.save-btn {
+  margin-top: 0;
 }
 
 .panel {
@@ -355,6 +476,13 @@
   text-align: center;
 }
 
+.sheet-subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-top: -8px;
+}
+
 .sheet-actions {
   display: flex;
   gap: 12px;
@@ -422,6 +550,12 @@
 .expense-category {
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.expense-tag {
+  font-size: 0.78rem;
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .expense-note {

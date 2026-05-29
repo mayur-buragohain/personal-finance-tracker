@@ -1,9 +1,9 @@
-import { collection, doc, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
-import { PRESET_CATEGORIES } from '../utils/helpers';
+import { doc, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
+import { categoriesCollection } from './paths';
+import { PRESET_CATEGORIES } from './helpers';
 
-export async function seedCategories(uid) {
-  const categoriesRef = collection(db, 'users', uid, 'categories');
+export async function seedCategories(authUid, profileId) {
+  const categoriesRef = categoriesCollection(authUid, profileId);
   const snapshot = await getDocs(categoriesRef);
 
   if (!snapshot.empty) return;
@@ -20,8 +20,8 @@ export async function seedCategories(uid) {
   );
 }
 
-export async function addCategory(uid, category) {
-  const categoriesRef = collection(db, 'users', uid, 'categories');
+export async function addCategory(authUid, profileId, category) {
+  const categoriesRef = categoriesCollection(authUid, profileId);
   await setDoc(doc(categoriesRef, category.id), {
     id: category.id,
     label: category.label,
