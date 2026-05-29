@@ -3,15 +3,13 @@ import { addDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { addCategory } from '../utils/categories';
 import { addTag } from '../utils/tags';
 import { expensesCollection, tagsCollection } from '../utils/paths';
-import { slugify, randomCategoryColor, todayISO } from '../utils/helpers';
-
-const ADD_CATEGORY = '__add_new__';
+import { slugify, randomCategoryColor, todayISO, ADD_CATEGORY, buildTagsPayload } from '../utils/helpers';
 
 export default function AddExpense({ authUid, profileId, categories }) {
   const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [tagId, setTagId] = useState('');
+  const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [tags, setTags] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -71,19 +69,16 @@ export default function AddExpense({ authUid, profileId, categories }) {
         createdAt: serverTimestamp(),
       };
 
-      if (tagId) {
-        const tag = tags.find((t) => t.id === tagId);
-        if (tag) {
-          expense.tagId = tag.id;
-          expense.tagLabel = tag.label;
-        }
+      const tagPayload = buildTagsPayload(selectedTagIds, tags);
+      if (tagPayload.length > 0) {
+        expense.tags = tagPayload;
       }
 
       await addDoc(expensesCollection(authUid, profileId), expense);
 
       setAmount('');
       setCategoryId('');
-      setTagId('');
+      setSelectedTagIds([]);
       setDate(todayISO());
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -123,7 +118,7 @@ export default function AddExpense({ authUid, profileId, categories }) {
       };
       await addCategory(authUid, profileId, category);
       setCategoryId(id);
-      setTagId('');
+      setSelectedTagIds([]);
       setNewCategoryName('');
       setNewCategoryEmoji('📌');
       setShowCategoryModal(false);
@@ -155,7 +150,7 @@ export default function AddExpense({ authUid, profileId, categories }) {
     try {
       const tag = { id, label };
       await addTag(authUid, profileId, categoryId, tag);
-      setTagId(id);
+      setSelectedTagIds((prev) => [...prev, id]);
       setNewTagName('');
       setShowTagModal(false);
       setSaved(false);
@@ -165,6 +160,13 @@ export default function AddExpense({ authUid, profileId, categories }) {
     } finally {
       setAddingTag(false);
     }
+  };
+
+  const toggleTag = (id) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+    setSaved(false);
   };
 
   const openCategoryModal = () => {
@@ -228,7 +230,7 @@ export default function AddExpense({ authUid, profileId, categories }) {
               return;
             }
             setCategoryId(value);
-            setTagId('');
+            setSelectedTagIds([]);
             setSaved(false);
           }}
         >
@@ -246,17 +248,14 @@ export default function AddExpense({ authUid, profileId, categories }) {
         <div className="field-group field-group--centered">
           {tags.length > 0 && (
             <>
-              <span className="field-label">Tag</span>
-              <div className="option-chips" role="group" aria-label="Select tag">
+              <span className="field-label">Tags</span>
+              <div className="option-chips" role="group" aria-label="Select tags">
                 {tags.map((tag) => (
                   <button
                     key={tag.id}
                     type="button"
-                    className={`option-chip option-chip--tag ${tagId === tag.id ? 'selected' : ''}`}
-                    onClick={() => {
-                      setTagId(tagId === tag.id ? '' : tag.id);
-                      setSaved(false);
-                    }}
+                    className={`option-chip option-chip--tag ${selectedTagIds.includes(tag.id) ? 'selected' : ''}`}
+                    onClick={() => toggleTag(tag.id)}
                   >
                     {tag.label}
                   </button>

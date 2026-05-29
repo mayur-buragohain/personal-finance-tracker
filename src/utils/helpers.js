@@ -70,3 +70,21 @@ export function resolveCategory(expense, categoryMap) {
     color: '#94A3B8',
   };
 }
+
+export function getExpenseTags(expense) {
+  if (Array.isArray(expense.tags) && expense.tags.length > 0) {
+    return expense.tags;
+  }
+  if (expense.tagId) {
+    return [{ id: expense.tagId, label: expense.tagLabel || expense.tagId }];
+  }
+  return [];
+}
+
+export function buildTagsPayload(selectedTagIds, availableTags) {
+  return availableTags
+    .filter((t) => selectedTagIds.includes(t.id))
+    .map((t) => ({ id: t.id, label: t.label }));
+}
+
+export const ADD_CATEGORY = '__add_new__';

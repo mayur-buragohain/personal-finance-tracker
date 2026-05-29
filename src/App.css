@@ -610,9 +610,79 @@
 }
 
 .expense-tag {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: var(--accent);
   font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(108, 92, 231, 0.12);
+  white-space: nowrap;
+}
+
+.expense-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.edit-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  transition: color var(--transition), background var(--transition);
+}
+
+.edit-btn:hover {
+  color: var(--accent);
+  background: rgba(108, 92, 231, 0.12);
+}
+
+.log-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.expense-date-group {
+  margin-bottom: 20px;
+}
+
+.expense-date-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.expense-date-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.expense-date-total {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.edit-sheet {
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+
+.modal-overlay--nested {
+  z-index: 300;
 }
 
 .expense-note {
