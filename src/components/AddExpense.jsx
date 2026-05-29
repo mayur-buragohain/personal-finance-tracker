@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { addDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { addCategory } from '../utils/categories';
-import { addTag } from '../utils/tags';
-import { expensesCollection, tagsCollection } from '../utils/paths';
-import { slugify, randomCategoryColor, todayISO, ADD_CATEGORY, buildTagsPayload } from '../utils/helpers';
+import { createExpense } from '../utils/expenses';
+import { addTag, subscribeTags } from '../utils/tags';
+import { randomCategoryColor, todayISO, ADD_CATEGORY } from '../utils/helpers';
 
-export default function AddExpense({ authUid, profileId, categories }) {
+export default function AddExpense({ profileId, categories }) {
   const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -28,18 +27,8 @@ export default function AddExpense({ authUid, profileId, categories }) {
       setTags([]);
       return;
     }
-
-    const unsubscribe = onSnapshot(
-      tagsCollection(authUid, profileId, categoryId),
-      (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data());
-        items.sort((a, b) => a.label.localeCompare(b.label));
-        setTags(items);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [authUid, profileId, categoryId]);
+    return subscribeTags(categoryId, setTags);
+  }, [categoryId]);
 
   const handleAmountChange = (e) => {
     const value = e.target.value;
@@ -53,28 +42,16 @@ export default function AddExpense({ authUid, profileId, categories }) {
     const parsedAmount = parseFloat(amount);
     if (!parsedAmount || parsedAmount <= 0 || !categoryId) return;
 
-    const category = categories.find((c) => c.id === categoryId);
-    if (!category) return;
-
     setSaving(true);
     setSaved(false);
 
     try {
-      const expense = {
+      await createExpense(profileId, {
         amount: parsedAmount,
-        categoryId: category.id,
-        categoryLabel: category.label,
-        categoryIcon: category.icon,
+        categoryId,
         date,
-        createdAt: serverTimestamp(),
-      };
-
-      const tagPayload = buildTagsPayload(selectedTagIds, tags);
-      if (tagPayload.length > 0) {
-        expense.tags = tagPayload;
-      }
-
-      await addDoc(expensesCollection(authUid, profileId), expense);
+        tagIds: selectedTagIds,
+      });
 
       setAmount('');
       setCategoryId('');
@@ -99,9 +76,7 @@ export default function AddExpense({ authUid, profileId, categories }) {
       setCategoryError('Pick an emoji');
       return;
     }
-
-    const id = slugify(label);
-    if (categories.some((c) => c.id === id)) {
+    if (categories.some((c) => c.label.toLowerCase() === label.toLowerCase())) {
       setCategoryError('Category already exists');
       return;
     }
@@ -110,14 +85,12 @@ export default function AddExpense({ authUid, profileId, categories }) {
     setAddingCategory(true);
 
     try {
-      const category = {
-        id,
+      const category = await addCategory({
         label,
         icon: newCategoryEmoji.trim(),
         color: randomCategoryColor(),
-      };
-      await addCategory(authUid, profileId, category);
-      setCategoryId(id);
+      });
+      setCategoryId(category.id);
       setSelectedTagIds([]);
       setNewCategoryName('');
       setNewCategoryEmoji('📌');
@@ -137,9 +110,7 @@ export default function AddExpense({ authUid, profileId, categories }) {
       setTagError('Enter a tag name');
       return;
     }
-
-    const id = slugify(label);
-    if (tags.some((t) => t.id === id)) {
+    if (tags.some((t) => t.label.toLowerCase() === label.toLowerCase())) {
       setTagError('Tag already exists for this category');
       return;
     }
@@ -148,9 +119,8 @@ export default function AddExpense({ authUid, profileId, categories }) {
     setAddingTag(true);
 
     try {
-      const tag = { id, label };
-      await addTag(authUid, profileId, categoryId, tag);
-      setSelectedTagIds((prev) => [...prev, id]);
+      const tag = await addTag(categoryId, label);
+      setSelectedTagIds((prev) => [...prev, tag.id]);
       setNewTagName('');
       setShowTagModal(false);
       setSaved(false);
@@ -263,11 +233,7 @@ export default function AddExpense({ authUid, profileId, categories }) {
               </div>
             </>
           )}
-          <button
-            type="button"
-            className="add-category-link"
-            onClick={openTagModal}
-          >
+          <button type="button" className="add-category-link" onClick={openTagModal}>
             + Add new tag
           </button>
         </div>

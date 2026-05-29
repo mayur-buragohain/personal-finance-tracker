@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { deleteDoc } from 'firebase/firestore';
-import { expenseDoc } from '../utils/paths';
+import { deleteExpense } from '../utils/expenses';
 import {
   formatDisplayDate,
   formatINR,
@@ -11,7 +10,7 @@ import ExpenseEditModal from './ExpenseEditModal';
 
 const SWIPE_THRESHOLD = 80;
 
-export default function ExpenseLog({ authUid, profileId, expenses, categories }) {
+export default function ExpenseLog({ profileId, expenses, categories }) {
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
   const [filterDate, setFilterDate] = useState('');
   const [editingExpense, setEditingExpense] = useState(null);
@@ -49,7 +48,7 @@ export default function ExpenseLog({ authUid, profileId, expenses, categories })
     setDeletingId(expense.docId);
 
     try {
-      await deleteDoc(expenseDoc(authUid, profileId, expense.docId));
+      await deleteExpense(expense.id);
     } catch (err) {
       console.error('Failed to delete expense:', err);
     } finally {
@@ -200,7 +199,6 @@ export default function ExpenseLog({ authUid, profileId, expenses, categories })
       {editingExpense && (
         <ExpenseEditModal
           expense={editingExpense}
-          authUid={authUid}
           profileId={profileId}
           categories={categories}
           onClose={() => setEditingExpense(null)}

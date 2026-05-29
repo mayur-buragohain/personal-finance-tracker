@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { onSnapshot } from 'firebase/firestore';
-import { profilesCollection } from '../utils/paths';
-import { createProfile, verifyProfilePasskey } from '../utils/profiles';
+import { subscribeProfiles, createProfile, verifyProfilePasskey } from '../utils/profiles';
 import { validatePasskey } from '../utils/passkey';
+import AdminLogin from './AdminLogin';
 
-export default function UserSelect({ authUid, onSelectProfile }) {
+export default function UserSelect({ authUid, onSelectProfile, onAdminLogin }) {
   const [profiles, setProfiles] = useState([]);
   const [selectedProfileId, setSelectedProfileId] = useState('');
   const [passkey, setPasskey] = useState('');
@@ -16,19 +15,10 @@ export default function UserSelect({ authUid, onSelectProfile }) {
   const [confirmPasskey, setConfirmPasskey] = useState('');
   const [createError, setCreateError] = useState('');
   const [creating, setCreating] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(profilesCollection(authUid), (snapshot) => {
-      const items = snapshot.docs.map((d) => ({
-        id: d.id,
-        name: d.data().name,
-        hasPasskey: Boolean(d.data().passkeyHash),
-      }));
-      items.sort((a, b) => a.name.localeCompare(b.name));
-      setProfiles(items);
-    });
-
-    return () => unsubscribe();
+    return subscribeProfiles(authUid, setProfiles);
   }, [authUid]);
 
   useEffect(() => {
@@ -143,7 +133,12 @@ export default function UserSelect({ authUid, onSelectProfile }) {
 
   return (
     <section className="user-select fade-in">
-      {profiles.length === 0 ? (
+      {showAdminLogin ? (
+        <AdminLogin
+          onSuccess={onAdminLogin}
+          onCancel={() => setShowAdminLogin(false)}
+        />
+      ) : profiles.length === 0 ? (
         <div className="user-select-empty">
           <p className="chip-empty">No registered users yet</p>
           <button type="button" className="add-user-link" onClick={openCreateForm}>
@@ -216,6 +211,12 @@ export default function UserSelect({ authUid, onSelectProfile }) {
             + Add user
           </button>
         </>
+      )}
+
+      {!showAdminLogin && (
+        <button type="button" className="admin-login-link" onClick={() => setShowAdminLogin(true)}>
+          Admin sign in
+        </button>
       )}
 
       {showCreateForm && (

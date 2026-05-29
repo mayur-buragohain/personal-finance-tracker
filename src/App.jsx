@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-import { onSnapshot, orderBy, query } from 'firebase/firestore';
-import { auth } from './firebase';
-import { categoriesCollection, expensesCollection } from './utils/paths';
+import { supabase, isSupabaseConfigured } from './supabase';
+import { subscribeCategories, seedGlobalCategories } from './utils/categories';
+import { subscribeExpenses } from './utils/expenses';
 import {
   clearActiveProfile,
   loadActiveProfile,
   saveActiveProfile,
 } from './utils/profiles';
+import { isAdminLoggedIn } from './utils/admin';
 import UserSelect from './components/UserSelect';
+import AdminPanel from './components/AdminPanel';
 import AddExpense from './components/AddExpense';
 import ExpenseLog from './components/ExpenseLog';
 import Report from './components/Report';
@@ -23,81 +24,87 @@ const TABS = [
 export default function App() {
   const [user, setUser] = useState(null);
   const [authError, setAuthError] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(isSupabaseConfigured);
   const [activeProfile, setActiveProfile] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(isAdminLoggedIn);
   const [activeTab, setActiveTab] = useState('home');
   const [categories, setCategories] = useState([]);
   const [expenses, setExpenses] = useState([]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
+    if (!isSupabaseConfigured) return;
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
         setAuthError(null);
-        setActiveProfile(loadActiveProfile(currentUser.uid));
-      } else {
-        try {
-          await signInAnonymously(auth);
-        } catch (err) {
-          setAuthError('Unable to connect. Check your Firebase configuration.');
-          console.error('Anonymous sign-in failed:', err);
-        }
+        setActiveProfile((prev) => prev ?? loadActiveProfile(session.user.id));
       }
       setAuthLoading(false);
     });
 
-    return () => unsubscribe();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) {
+        supabase.auth.signInAnonymously().then(({ error }) => {
+          if (error) {
+            setAuthError('Unable to connect. Check your Supabase configuration.');
+            console.error('Anonymous sign-in failed:', error);
+            setAuthLoading(false);
+          }
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!user || !activeProfile) return;
+    if (!user || isAdmin) return;
+    seedGlobalCategories().catch((err) => console.error('Failed to seed categories:', err));
+  }, [user, isAdmin]);
 
-    const unsubscribe = onSnapshot(
-      categoriesCollection(user.uid, activeProfile.id),
-      (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data());
-        items.sort((a, b) => a.label.localeCompare(b.label));
-        setCategories(items);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user, activeProfile]);
+  useEffect(() => {
+    if (!user || !activeProfile || isAdmin) return;
+    return subscribeCategories(setCategories);
+  }, [user, activeProfile, isAdmin]);
 
   useEffect(() => {
     if (!user || !activeProfile) return;
-
-    const q = query(
-      expensesCollection(user.uid, activeProfile.id),
-      orderBy('date', 'desc')
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map((d) => ({ ...d.data(), docId: d.id }));
-      items.sort((a, b) => {
-        if (a.date !== b.date) return b.date.localeCompare(a.date);
-        const aTime = a.createdAt?.toMillis?.() ?? 0;
-        const bTime = b.createdAt?.toMillis?.() ?? 0;
-        return bTime - aTime;
-      });
-      setExpenses(items);
-    });
-
-    return () => unsubscribe();
+    return subscribeExpenses(activeProfile.id, setExpenses);
   }, [user, activeProfile]);
 
   const handleSelectProfile = (profile) => {
     setActiveProfile(profile);
-    saveActiveProfile(user.uid, profile);
+    saveActiveProfile(user.id, profile);
     setActiveTab('home');
   };
 
   const handleSwitchUser = () => {
-    clearActiveProfile(user.uid);
+    clearActiveProfile(user.id);
     setActiveProfile(null);
     setCategories([]);
     setExpenses([]);
     setActiveTab('home');
   };
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="app-shell">
+        <div className="error-screen">
+          <span className="error-icon">⚠️</span>
+          <h1>Configuration Required</h1>
+          <p>
+            Add your Supabase credentials to <code>.env</code>:
+          </p>
+          <pre className="env-hint">{`VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key`}</pre>
+          <p>Then restart the dev server with <code>npm run dev</code>.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (authLoading) {
     return (
@@ -109,16 +116,20 @@ export default function App() {
     );
   }
 
-  if (authError) {
+  if (authError || !user) {
     return (
       <div className="app-shell">
         <div className="error-screen">
           <span className="error-icon">⚠️</span>
           <h1>Connection Error</h1>
-          <p>{authError}</p>
+          <p>{authError || 'Unable to sign in. Check your Supabase configuration.'}</p>
         </div>
       </div>
     );
+  }
+
+  if (isAdmin) {
+    return <AdminPanel authUid={user.id} onLogout={() => setIsAdmin(false)} />;
   }
 
   if (!activeProfile) {
@@ -128,7 +139,11 @@ export default function App() {
           <h1>Personal Finance Tracker</h1>
         </header>
         <main className="app-main app-main--home">
-          <UserSelect authUid={user.uid} onSelectProfile={handleSelectProfile} />
+          <UserSelect
+            authUid={user.id}
+            onSelectProfile={handleSelectProfile}
+            onAdminLogin={() => setIsAdmin(true)}
+          />
         </main>
       </div>
     );
@@ -150,15 +165,10 @@ export default function App() {
 
       <main className={`app-main ${isHome ? 'app-main--home' : ''}`}>
         {activeTab === 'home' && (
-          <AddExpense
-            authUid={user.uid}
-            profileId={activeProfile.id}
-            categories={categories}
-          />
+          <AddExpense profileId={activeProfile.id} categories={categories} />
         )}
         {activeTab === 'log' && (
           <ExpenseLog
-            authUid={user.uid}
             profileId={activeProfile.id}
             expenses={expenses}
             categories={categories}

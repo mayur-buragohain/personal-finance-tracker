@@ -1,114 +1,87 @@
-
-# Project Title
-
-A brief description of what this project does and who it's for
-
 # Expense Tracker
 
-A mobile-first personal daily expense tracker built with React, Vite, and Firebase Firestore. Track spending in INR (₹), view logs in real time, and analyze monthly reports — all with silent anonymous authentication (no login screen).
+A mobile-first personal daily expense tracker built with React, Vite, and Supabase (PostgreSQL). Track spending in INR (₹), view logs in real time, and analyze monthly reports — all with silent anonymous authentication (no login screen).
 
 ## Features
 
-- **Add Expense** — Large amount input, tap-friendly category grid, optional notes, date picker
-- **Expense Log** — Real-time list with swipe or tap-to-delete
+- **Multi-user profiles** — Separate expense data per household member, each protected by a passkey
+- **Add Expense** — Date, amount, category, and optional multiple tags
+- **Expense Log** — Grouped by date, filterable, editable, swipe/tap to delete
 - **Monthly Report** — Category breakdown, daily spending chart, top 5 expenses
-- **Custom Categories** — Add your own categories with emoji and name
+- **Custom Categories & Tags** — Tags are scoped per category; rename a category or tag in one place and all linked expenses reflect it instantly
 - **Dark Theme** — Mobile-first UI, max 480px width, centered on desktop
 - **INR Formatting** — Indian number formatting (e.g. ₹1,25,000)
 
 ## Tech Stack
 
 - React + Vite (frontend)
-- Firebase Firestore (database)
-- Firebase Anonymous Authentication (silent auth)
+- Supabase PostgreSQL (database)
+- Supabase Anonymous Authentication (silent auth)
 - Vercel (hosting)
 
 ---
 
 ## Step-by-Step Setup Guide
 
-### 1. Create a Firebase Project
+### 1. Create a Supabase Project
 
-1. Go to [Firebase Console](https://console.firebase.google.com/) and click **Add project**.
-2. Follow the prompts to create your project.
-3. Once created, open your project dashboard.
+1. Go to [Supabase](https://supabase.com/) and sign in.
+2. Click **New project**.
+3. Choose an organization, name your project, set a database password, and pick a region close to your users.
+4. Wait for the project to finish provisioning.
 
-### 2. Enable Firestore
+### 2. Run the Database Migration
 
-1. In the left sidebar, go to **Build → Firestore Database**.
-2. Click **Create database**.
-3. Choose **Start in production mode** (we'll add security rules next).
-4. Select a Cloud Firestore location close to your users and click **Enable**.
+1. In your Supabase dashboard, open **SQL Editor**.
+2. Click **New query**.
+3. Copy the entire contents of `supabase/migrations/001_initial_schema.sql` from this repo and paste it into the editor.
+4. Click **Run**.
 
-### 3. Deploy Firestore Security Rules
+This creates all tables (`profiles`, `categories`, `tags`, `expenses`, `expense_tags`), indexes, Row Level Security policies, and enables Realtime.
 
-1. In Firestore, go to the **Rules** tab.
-2. Replace the default rules with the contents of `firestore.rules` from this repo:
+### 3. Enable Anonymous Authentication
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
-```
+1. In the Supabase dashboard, go to **Authentication → Providers**.
+2. Find **Anonymous sign-ins** and enable it.
+3. Save changes.
 
-3. Click **Publish**.
+### 4. Copy API Keys
 
-### 4. Enable Anonymous Authentication
+1. Go to **Project Settings → API**.
+2. Copy your **Project URL** and **anon public** key — you'll need them for your `.env` file.
 
-1. In the left sidebar, go to **Build → Authentication**.
-2. Click **Get started**.
-3. Go to the **Sign-in method** tab.
-4. Click **Anonymous** and toggle it **Enable**.
-5. Click **Save**.
-
-### 5. Register a Web App and Copy Config Keys
-
-1. Go to **Project Settings** (gear icon) → **General**.
-2. Under **Your apps**, click the web icon (`</>`) to register a new web app.
-3. Give it a nickname (e.g. "Expense Tracker") and click **Register app**.
-4. Copy the `firebaseConfig` values — you'll need them for your `.env` file.
-
-### 6. Clone the Repository and Add Environment Variables
+### 5. Clone the Repository and Add Environment Variables
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/expense-tracker.git
 cd expense-tracker
 ```
 
-Copy the example env file and fill in your Firebase config:
+Copy the example env file and fill in your Supabase values:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your Firebase values:
+Edit `.env`:
 
 ```
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
 
 > **Never commit `.env` to Git.** It is listed in `.gitignore`.
 
-### 7. Install Dependencies and Run Locally
+### 6. Install Dependencies and Run Locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the URL shown in the terminal (usually `http://localhost:5173`). The app will silently sign you in anonymously and seed preset categories on first load.
+Open the URL shown in the terminal (usually `http://localhost:5173`). The app will silently sign you in anonymously. Create a user profile on first launch — preset categories are seeded automatically.
 
-### 8. Push to a GitHub Public Repository
+### 7. Push to a GitHub Public Repository
 
 ```bash
 git init
@@ -119,7 +92,7 @@ git remote add origin https://github.com/YOUR_USERNAME/expense-tracker.git
 git push -u origin main
 ```
 
-### 9. Connect GitHub Repo to Vercel
+### 8. Connect GitHub Repo to Vercel
 
 1. Go to [Vercel](https://vercel.com/) and sign in with GitHub.
 2. Click **Add New → Project**.
@@ -129,26 +102,22 @@ git push -u origin main
    - **Output Directory:** `dist`
 5. Do **not** deploy yet — add environment variables first.
 
-### 10. Add Environment Variables in Vercel
+### 9. Add Environment Variables in Vercel
 
-In the Vercel project settings, go to **Settings → Environment Variables** and add all six variables:
+In the Vercel project settings, go to **Settings → Environment Variables** and add:
 
 | Name | Value |
 |------|-------|
-| `VITE_FIREBASE_API_KEY` | Your Firebase API key |
-| `VITE_FIREBASE_AUTH_DOMAIN` | Your auth domain |
-| `VITE_FIREBASE_PROJECT_ID` | Your project ID |
-| `VITE_FIREBASE_STORAGE_BUCKET` | Your storage bucket |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Your sender ID |
-| `VITE_FIREBASE_APP_ID` | Your app ID |
+| `VITE_SUPABASE_URL` | Your Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon public key |
 
 Apply them to **Production**, **Preview**, and **Development** environments.
 
-### 11. Deploy
+### 10. Deploy
 
 Click **Deploy** (or push a new commit to trigger automatic deployment). Once complete, your app is live at your Vercel URL (e.g. `https://expense-tracker.vercel.app`).
 
-### 12. Bookmark on Android / iOS Home Screen
+### 11. Bookmark on Android / iOS Home Screen
 
 **Android (Chrome):**
 1. Open your Vercel URL in Chrome.
@@ -172,48 +141,86 @@ expense-tracker/
 ├── index.html
 ├── vite.config.js
 ├── .env.example
-├── firestore.rules
+├── supabase/
+│   └── migrations/
+│       └── 001_initial_schema.sql
 ├── README.md
 └── src/
     ├── main.jsx
     ├── App.jsx
-    ├── firebase.js
+    ├── supabase.js
     ├── index.css
     ├── App.css
     ├── utils/
     │   ├── helpers.js
-    │   └── categories.js
+    │   ├── passkey.js
+    │   ├── profiles.js
+    │   ├── categories.js
+    │   ├── tags.js
+    │   └── expenses.js
     └── components/
+        ├── UserSelect.jsx
         ├── AddExpense.jsx
         ├── ExpenseLog.jsx
+        ├── ExpenseEditModal.jsx
         └── Report.jsx
 ```
 
-## Data Model
+## Data Model (PostgreSQL)
 
-**Expense** (`users/{uid}/expenses/{expenseId}`):
+Each anonymous Supabase auth user owns one or more **profiles** (app users). All data is normalized with foreign keys — expenses store only `category_id` references, and tags are linked via a junction table. Renaming a category or tag updates a single row.
 
-```json
-{
-  "amount": 250.00,
-  "categoryId": "food",
-  "note": "Lunch at office",
-  "date": "2024-01-15",
-  "createdAt": "timestamp"
-}
+```
+auth.users (Supabase)
+  └── profiles
+        ├── categories
+        │     └── tags
+        └── expenses
+              └── expense_tags → tags
 ```
 
-**Category** (`users/{uid}/categories/{categoryId}`):
+**profiles**
 
-```json
-{
-  "id": "food",
-  "label": "Food & Dining",
-  "icon": "🍽️",
-  "color": "#FF6B6B"
-}
-```
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID | Primary key |
+| auth_user_id | UUID | FK → auth.users |
+| name | TEXT | Display name |
+| passkey_hash | TEXT | SHA-256 hash |
+| passkey_salt | TEXT | Random salt |
+
+**categories**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID | Primary key |
+| profile_id | UUID | FK → profiles |
+| label | TEXT | Renaming updates one row |
+| icon | TEXT | Emoji |
+| color | TEXT | Hex color |
+
+**tags**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID | Primary key |
+| category_id | UUID | FK → categories |
+| label | TEXT | Renaming updates one row |
+
+**expenses**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID | Primary key |
+| profile_id | UUID | FK → profiles |
+| category_id | UUID | FK → categories |
+| amount | NUMERIC | INR amount |
+| date | DATE | Expense date |
+
+**expense_tags** — many-to-many junction between expenses and tags.
+
+Row Level Security ensures each authenticated user can only access data belonging to their own `auth_user_id`.
 
 ## License
 
-MIT.
+MIT

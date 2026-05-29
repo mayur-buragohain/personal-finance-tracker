@@ -1,6 +1,4 @@
-import { addDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { profileDoc, profilesCollection } from './paths';
-import { seedCategories } from './categories';
+import { supabase } from '../supabase';
 import { hashPasskey, generateSalt, verifyPasskey } from './passkey';
 
 const STORAGE_PREFIX = 'pft_active_profile_';
@@ -22,29 +20,84 @@ export function clearActiveProfile(authUid) {
   localStorage.removeItem(`${STORAGE_PREFIX}${authUid}`);
 }
 
+export async function fetchProfiles(authUid) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, name, passkey_hash')
+    .eq('auth_user_id', authUid)
+    .order('name');
+
+  if (error) throw error;
+
+  return data.map((row) => ({
+    id: row.id,
+    name: row.name,
+    hasPasskey: Boolean(row.passkey_hash),
+  }));
+}
+
+export function subscribeProfiles(authUid, onUpdate) {
+  const load = async () => {
+    try {
+      const profiles = await fetchProfiles(authUid);
+      onUpdate(profiles);
+    } catch (err) {
+      console.error('Failed to load profiles:', err);
+    }
+  };
+
+  load();
+
+  const channel = supabase
+    .channel(`profiles-${authUid}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'profiles',
+        filter: `auth_user_id=eq.${authUid}`,
+      },
+      load
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
 export async function createProfile(authUid, name, passkey) {
   const trimmed = name.trim();
   const salt = generateSalt();
   const passkeyHash = await hashPasskey(passkey, salt);
 
-  const docRef = await addDoc(profilesCollection(authUid), {
-    name: trimmed,
-    passkeyHash,
-    passkeySalt: salt,
-    createdAt: serverTimestamp(),
-  });
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert({
+      auth_user_id: authUid,
+      name: trimmed,
+      passkey_hash: passkeyHash,
+      passkey_salt: salt,
+    })
+    .select('id, name')
+    .single();
 
-  const profile = { id: docRef.id, name: trimmed };
-  await seedCategories(authUid, profile.id);
-  return profile;
+  if (error) throw error;
+
+  return { id: data.id, name: data.name };
 }
 
 export async function verifyProfilePasskey(authUid, profileId, passkey) {
-  const snapshot = await getDoc(profileDoc(authUid, profileId));
-  if (!snapshot.exists()) return false;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('passkey_hash, passkey_salt')
+    .eq('id', profileId)
+    .eq('auth_user_id', authUid)
+    .single();
 
-  const { passkeyHash, passkeySalt } = snapshot.data();
-  if (!passkeyHash) return true;
+  if (error || !data) return false;
+  if (!data.passkey_hash) return true;
 
-  return verifyPasskey(passkey, passkeySalt, passkeyHash);
+  return verifyPasskey(passkey, data.passkey_salt, data.passkey_hash);
 }

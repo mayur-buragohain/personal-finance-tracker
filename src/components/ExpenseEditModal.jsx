@@ -1,20 +1,16 @@
 import { useEffect, useState } from 'react';
-import { deleteField, onSnapshot, updateDoc } from 'firebase/firestore';
 import { addCategory } from '../utils/categories';
-import { addTag } from '../utils/tags';
-import { expenseDoc, tagsCollection } from '../utils/paths';
+import { updateExpense } from '../utils/expenses';
+import { addTag, subscribeTags } from '../utils/tags';
 import {
   ADD_CATEGORY,
-  buildTagsPayload,
   getExpenseTags,
   randomCategoryColor,
-  slugify,
   formatINR,
 } from '../utils/helpers';
 
 export default function ExpenseEditModal({
   expense,
-  authUid,
   profileId,
   categories,
   onClose,
@@ -42,18 +38,8 @@ export default function ExpenseEditModal({
       setCategoryTags([]);
       return;
     }
-
-    const unsubscribe = onSnapshot(
-      tagsCollection(authUid, profileId, categoryId),
-      (snapshot) => {
-        const items = snapshot.docs.map((d) => d.data());
-        items.sort((a, b) => a.label.localeCompare(b.label));
-        setCategoryTags(items);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [authUid, profileId, categoryId]);
+    return subscribeTags(categoryId, setCategoryTags);
+  }, [categoryId]);
 
   useEffect(() => {
     setSelectedTagIds((prev) =>
@@ -73,25 +59,15 @@ export default function ExpenseEditModal({
       return;
     }
 
-    const category = categories.find((c) => c.id === categoryId);
-    if (!category) return;
-
     setSaving(true);
     setError('');
 
     try {
-      const tags = buildTagsPayload(selectedTagIds, categoryTags);
-      const update = {
+      await updateExpense(expense.id, {
         date,
-        categoryId: category.id,
-        categoryLabel: category.label,
-        categoryIcon: category.icon,
-        tags,
-        tagId: deleteField(),
-        tagLabel: deleteField(),
-      };
-
-      await updateDoc(expenseDoc(authUid, profileId, expense.docId), update);
+        categoryId,
+        tagIds: selectedTagIds,
+      });
       onClose();
     } catch (err) {
       setError('Failed to save changes');
@@ -111,9 +87,7 @@ export default function ExpenseEditModal({
       setCategoryError('Pick an emoji');
       return;
     }
-
-    const id = slugify(label);
-    if (categories.some((c) => c.id === id)) {
+    if (categories.some((c) => c.label.toLowerCase() === label.toLowerCase())) {
       setCategoryError('Category already exists');
       return;
     }
@@ -122,13 +96,12 @@ export default function ExpenseEditModal({
     setAddingCategory(true);
 
     try {
-      await addCategory(authUid, profileId, {
-        id,
+      const category = await addCategory({
         label,
         icon: newCategoryEmoji.trim(),
         color: randomCategoryColor(),
       });
-      setCategoryId(id);
+      setCategoryId(category.id);
       setSelectedTagIds([]);
       setNewCategoryName('');
       setNewCategoryEmoji('📌');
@@ -147,9 +120,7 @@ export default function ExpenseEditModal({
       setTagError('Enter a tag name');
       return;
     }
-
-    const id = slugify(label);
-    if (categoryTags.some((t) => t.id === id)) {
+    if (categoryTags.some((t) => t.label.toLowerCase() === label.toLowerCase())) {
       setTagError('Tag already exists for this category');
       return;
     }
@@ -158,8 +129,8 @@ export default function ExpenseEditModal({
     setAddingTag(true);
 
     try {
-      await addTag(authUid, profileId, categoryId, { id, label });
-      setSelectedTagIds((prev) => [...prev, id]);
+      const tag = await addTag(categoryId, label);
+      setSelectedTagIds((prev) => [...prev, tag.id]);
       setNewTagName('');
       setShowTagModal(false);
     } catch (err) {
