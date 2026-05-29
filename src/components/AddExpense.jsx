@@ -5,6 +5,8 @@ import { addTag } from '../utils/tags';
 import { expensesCollection, tagsCollection } from '../utils/paths';
 import { slugify, randomCategoryColor, todayISO } from '../utils/helpers';
 
+const ADD_CATEGORY = '__add_new__';
+
 export default function AddExpense({ authUid, profileId, categories }) {
   const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState('');
@@ -220,7 +222,12 @@ export default function AddExpense({ authUid, profileId, categories }) {
           className="text-input select-input landing-control"
           value={categoryId}
           onChange={(e) => {
-            setCategoryId(e.target.value);
+            const value = e.target.value;
+            if (value === ADD_CATEGORY) {
+              openCategoryModal();
+              return;
+            }
+            setCategoryId(value);
             setTagId('');
             setSaved(false);
           }}
@@ -231,35 +238,32 @@ export default function AddExpense({ authUid, profileId, categories }) {
               {cat.icon} {cat.label}
             </option>
           ))}
+          <option value={ADD_CATEGORY}>+ Add new category</option>
         </select>
-        <button
-          type="button"
-          className="add-category-link"
-          onClick={openCategoryModal}
-        >
-          + Add new category
-        </button>
       </div>
 
       {categoryId && (
         <div className="field-group field-group--centered">
-          <label htmlFor="tag" className="field-label">Tag</label>
-          <select
-            id="tag"
-            className="text-input select-input landing-control"
-            value={tagId}
-            onChange={(e) => {
-              setTagId(e.target.value);
-              setSaved(false);
-            }}
-          >
-            <option value="">No tag</option>
-            {tags.map((tag) => (
-              <option key={tag.id} value={tag.id}>
-                {tag.label}
-              </option>
-            ))}
-          </select>
+          {tags.length > 0 && (
+            <>
+              <span className="field-label">Tag</span>
+              <div className="option-chips" role="group" aria-label="Select tag">
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    className={`option-chip option-chip--tag ${tagId === tag.id ? 'selected' : ''}`}
+                    onClick={() => {
+                      setTagId(tagId === tag.id ? '' : tag.id);
+                      setSaved(false);
+                    }}
+                  >
+                    {tag.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           <button
             type="button"
             className="add-category-link"

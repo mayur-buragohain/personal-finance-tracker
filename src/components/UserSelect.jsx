@@ -143,67 +143,80 @@ export default function UserSelect({ authUid, onSelectProfile }) {
 
   return (
     <section className="user-select fade-in">
-      <div className="field-group field-group--centered">
-        <label htmlFor="user-select" className="field-label">Username</label>
-        <select
-          id="user-select"
-          className="text-input select-input landing-control"
-          value={selectedProfileId}
-          onChange={(e) => {
-            setSelectedProfileId(e.target.value);
-            setPasskey('');
-            setError('');
-          }}
-        >
-          <option value="">
-            {profiles.length === 0 ? 'No users yet' : 'Select user'}
-          </option>
-          {profiles.map((profile) => (
-            <option key={profile.id} value={profile.id}>
-              {profile.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {profiles.length === 0 ? (
+        <div className="user-select-empty">
+          <p className="chip-empty">No registered users yet</p>
+          <button type="button" className="add-user-link" onClick={openCreateForm}>
+            + Add user
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="field-group field-group--centered">
+            <span className="field-label">Username</span>
+            <div className="option-chips" role="group" aria-label="Select user">
+              {profiles.map((profile) => (
+                <button
+                  key={profile.id}
+                  type="button"
+                  className={`option-chip ${selectedProfileId === profile.id ? 'selected' : ''}`}
+                  onClick={() => {
+                    setSelectedProfileId(profile.id);
+                    setPasskey('');
+                    setError('');
+                  }}
+                >
+                  {profile.name}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <div className="field-group field-group--centered">
-        <label htmlFor="signin-passkey" className="field-label">Passkey</label>
-        <input
-          id="signin-passkey"
-          type="password"
-          className="text-input landing-control"
-          placeholder={
-            selectedProfile && !selectedProfile.hasPasskey
-              ? 'No passkey required'
-              : 'Enter passkey'
-          }
-          value={passkey}
-          onChange={(e) => {
-            setPasskey(e.target.value);
-            setError('');
-          }}
-          maxLength={32}
-          autoComplete="current-password"
-          disabled={!selectedProfile || (selectedProfile && !selectedProfile.hasPasskey)}
-          onKeyDown={(e) => e.key === 'Enter' && canSignIn && handleSignIn()}
-        />
-      </div>
+          {selectedProfileId && (
+            <>
+              <div className="field-group field-group--centered">
+                <label htmlFor="signin-passkey" className="field-label">Passkey</label>
+                <input
+                  id="signin-passkey"
+                  type="password"
+                  className="text-input landing-control"
+                  placeholder={
+                    selectedProfile && !selectedProfile.hasPasskey
+                      ? 'No passkey required'
+                      : 'Enter passkey'
+                  }
+                  value={passkey}
+                  onChange={(e) => {
+                    setPasskey(e.target.value);
+                    setError('');
+                  }}
+                  maxLength={32}
+                  autoComplete="current-password"
+                  disabled={selectedProfile && !selectedProfile.hasPasskey}
+                  onKeyDown={(e) => e.key === 'Enter' && canSignIn && handleSignIn()}
+                />
+              </div>
 
-      {error && <p className="field-error field-error--centered">{error}</p>}
+              {error && <p className="field-error field-error--centered">{error}</p>}
 
-      <div className="landing-actions">
-        <button
-          type="button"
-          className="primary-btn landing-control"
-          disabled={!canSignIn}
-          onClick={handleSignIn}
-        >
-          {signingIn ? 'Signing in…' : 'Continue'}
-        </button>
-        <button type="button" className="add-user-link" onClick={openCreateForm}>
-          + Add user
-        </button>
-      </div>
+              <div className="landing-actions">
+                <button
+                  type="button"
+                  className="primary-btn landing-control"
+                  disabled={!canSignIn}
+                  onClick={handleSignIn}
+                >
+                  {signingIn ? 'Signing in…' : 'Continue'}
+                </button>
+              </div>
+            </>
+          )}
+
+          <button type="button" className="add-user-link" onClick={openCreateForm}>
+            + Add user
+          </button>
+        </>
+      )}
 
       {showCreateForm && (
         <div className="modal-overlay" onClick={closeCreateForm}>

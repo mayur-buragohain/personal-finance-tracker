@@ -111,6 +111,63 @@
   color: var(--accent-hover);
 }
 
+.option-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.option-chip {
+  width: fit-content;
+  min-height: var(--tap-min);
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 2px solid var(--border);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+
+.option-chip:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.option-chip:active {
+  transform: scale(0.97);
+}
+
+.option-chip.selected {
+  border-color: var(--accent);
+  background: rgba(108, 92, 231, 0.15);
+  color: var(--text-primary);
+}
+
+.chip-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.user-select-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.option-chip--tag {
+  min-height: unset;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
 .landing-actions {
   display: flex;
   flex-direction: column;
