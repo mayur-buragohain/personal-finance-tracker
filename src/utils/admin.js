@@ -44,12 +44,11 @@ export async function adminFetchProfiles(password) {
   return adminRpc('admin_get_profiles', { p_password: password });
 }
 
-export async function adminCreateProfile(password, authUserId, name, passkey) {
+export async function adminCreateProfile(password, name, passkey) {
   const salt = generateSalt();
   const passkeyHash = await hashPasskey(passkey, salt);
   const rows = await adminRpc('admin_create_profile', {
     p_password: password,
-    p_auth_user_id: authUserId,
     p_name: name.trim(),
     p_passkey_hash: passkeyHash,
     p_passkey_salt: salt,

@@ -1,3 +1,3 @@
 -- DEPRECATED — do not run.
--- Global categories/tags are included in 001_initial_schema.sql.
+-- Global profiles and expense RLS fixes are included in 001_initial_schema.sql.
 -- Fresh setup: run 000_reset.sql → 001_initial_schema.sql → 002_admin_functions.sql

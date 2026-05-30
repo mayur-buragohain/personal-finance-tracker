@@ -129,7 +129,7 @@ VITE_SUPABASE_ANON_KEY=your_anon_key`}</pre>
   }
 
   if (isAdmin) {
-    return <AdminPanel authUid={user.id} onLogout={() => setIsAdmin(false)} />;
+    return <AdminPanel onLogout={() => setIsAdmin(false)} />;
   }
 
   if (!activeProfile) {
@@ -140,7 +140,6 @@ VITE_SUPABASE_ANON_KEY=your_anon_key`}</pre>
         </header>
         <main className="app-main app-main--home">
           <UserSelect
-            authUid={user.id}
             onSelectProfile={handleSelectProfile}
             onAdminLogin={() => setIsAdmin(true)}
           />

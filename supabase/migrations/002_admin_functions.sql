@@ -33,9 +33,11 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS admin_create_profile(text, uuid, text, text, text);
+DROP FUNCTION IF EXISTS admin_create_profile(text, text, text, text);
+
 CREATE OR REPLACE FUNCTION admin_create_profile(
   p_password text,
-  p_auth_user_id uuid,
   p_name text,
   p_passkey_hash text,
   p_passkey_salt text
@@ -62,8 +64,8 @@ BEGIN
     RAISE EXCEPTION 'This username is reserved';
   END IF;
 
-  INSERT INTO profiles (auth_user_id, name, passkey_hash, passkey_salt)
-  VALUES (p_auth_user_id, v_name, p_passkey_hash, p_passkey_salt)
+  INSERT INTO profiles (name, passkey_hash, passkey_salt)
+  VALUES (v_name, p_passkey_hash, p_passkey_salt)
   RETURNING profiles.id, profiles.name INTO v_profile_id, v_name;
 
   RETURN QUERY SELECT v_profile_id, v_name;
@@ -240,7 +242,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION verify_admin_password(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION admin_get_profiles(text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION admin_create_profile(text, uuid, text, text, text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin_create_profile(text, text, text, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION admin_delete_profile(text, uuid) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION admin_get_categories(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION admin_update_category_label(text, uuid, text) TO anon, authenticated;

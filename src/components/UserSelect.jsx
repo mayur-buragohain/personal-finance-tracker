@@ -3,7 +3,7 @@ import { subscribeProfiles, createProfile, verifyProfilePasskey } from '../utils
 import { validatePasskey } from '../utils/passkey';
 import AdminLogin from './AdminLogin';
 
-export default function UserSelect({ authUid, onSelectProfile, onAdminLogin }) {
+export default function UserSelect({ onSelectProfile, onAdminLogin }) {
   const [profiles, setProfiles] = useState([]);
   const [selectedProfileId, setSelectedProfileId] = useState('');
   const [passkey, setPasskey] = useState('');
@@ -18,8 +18,8 @@ export default function UserSelect({ authUid, onSelectProfile, onAdminLogin }) {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   useEffect(() => {
-    return subscribeProfiles(authUid, setProfiles);
-  }, [authUid]);
+    return subscribeProfiles(setProfiles);
+  }, []);
 
   useEffect(() => {
     if (profiles.length === 0) {
@@ -69,7 +69,7 @@ export default function UserSelect({ authUid, onSelectProfile, onAdminLogin }) {
 
     try {
       if (selectedProfile.hasPasskey) {
-        const valid = await verifyProfilePasskey(authUid, selectedProfile.id, passkey);
+        const valid = await verifyProfilePasskey(selectedProfile.id, passkey);
         if (!valid) {
           setError('Incorrect passkey');
           return;
@@ -109,7 +109,7 @@ export default function UserSelect({ authUid, onSelectProfile, onAdminLogin }) {
     setCreating(true);
 
     try {
-      const profile = await createProfile(authUid, name, newPasskey);
+      const profile = await createProfile(name, newPasskey);
       closeCreateForm();
       onSelectProfile(profile);
     } catch (err) {

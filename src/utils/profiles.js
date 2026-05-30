@@ -20,11 +20,10 @@ export function clearActiveProfile(authUid) {
   localStorage.removeItem(`${STORAGE_PREFIX}${authUid}`);
 }
 
-export async function fetchProfiles(authUid) {
+export async function fetchProfiles() {
   const { data, error } = await supabase
     .from('profiles')
     .select('id, name, passkey_hash')
-    .eq('auth_user_id', authUid)
     .order('name');
 
   if (error) throw error;
@@ -36,10 +35,10 @@ export async function fetchProfiles(authUid) {
   }));
 }
 
-export function subscribeProfiles(authUid, onUpdate) {
+export function subscribeProfiles(onUpdate) {
   const load = async () => {
     try {
-      const profiles = await fetchProfiles(authUid);
+      const profiles = await fetchProfiles();
       onUpdate(profiles);
     } catch (err) {
       console.error('Failed to load profiles:', err);
@@ -49,14 +48,13 @@ export function subscribeProfiles(authUid, onUpdate) {
   load();
 
   const channel = supabase
-    .channel(`profiles-${authUid}`)
+    .channel('profiles-global')
     .on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
         table: 'profiles',
-        filter: `auth_user_id=eq.${authUid}`,
       },
       load
     )
@@ -67,7 +65,7 @@ export function subscribeProfiles(authUid, onUpdate) {
   };
 }
 
-export async function createProfile(authUid, name, passkey) {
+export async function createProfile(name, passkey) {
   const trimmed = name.trim();
   const salt = generateSalt();
   const passkeyHash = await hashPasskey(passkey, salt);
@@ -75,7 +73,6 @@ export async function createProfile(authUid, name, passkey) {
   const { data, error } = await supabase
     .from('profiles')
     .insert({
-      auth_user_id: authUid,
       name: trimmed,
       passkey_hash: passkeyHash,
       passkey_salt: salt,
@@ -88,12 +85,11 @@ export async function createProfile(authUid, name, passkey) {
   return { id: data.id, name: data.name };
 }
 
-export async function verifyProfilePasskey(authUid, profileId, passkey) {
+export async function verifyProfilePasskey(profileId, passkey) {
   const { data, error } = await supabase
     .from('profiles')
     .select('passkey_hash, passkey_salt')
     .eq('id', profileId)
-    .eq('auth_user_id', authUid)
     .single();
 
   if (error || !data) return false;

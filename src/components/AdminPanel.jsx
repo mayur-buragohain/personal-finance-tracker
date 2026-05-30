@@ -8,7 +8,7 @@ const ADMIN_TABS = [
   { id: 'categories', label: 'Categories', icon: '🏷️' },
 ];
 
-export default function AdminPanel({ authUid, onLogout }) {
+export default function AdminPanel({ onLogout }) {
   const [activeTab, setActiveTab] = useState('users');
 
   const handleLogout = () => {
@@ -29,7 +29,7 @@ export default function AdminPanel({ authUid, onLogout }) {
       </header>
 
       <main className="app-main">
-        {activeTab === 'users' && <AdminUsers authUid={authUid} />}
+        {activeTab === 'users' && <AdminUsers />}
         {activeTab === 'categories' && <AdminCategories />}
       </main>
 

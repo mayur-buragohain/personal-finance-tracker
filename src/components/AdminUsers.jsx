@@ -8,7 +8,7 @@ import {
 } from '../utils/admin';
 import { validatePasskey } from '../utils/passkey';
 
-export default function AdminUsers({ authUid }) {
+export default function AdminUsers() {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -75,7 +75,7 @@ export default function AdminUsers({ authUid }) {
     setCreating(true);
 
     try {
-      await adminCreateProfile(getAdminPassword(), authUid, name, newPasskey);
+      await adminCreateProfile(getAdminPassword(), name, newPasskey);
       closeCreateForm();
       await loadProfiles();
     } catch (err) {

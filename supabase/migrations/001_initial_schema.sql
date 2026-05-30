@@ -1,5 +1,5 @@
 -- Personal Finance Tracker — initial schema
--- Run this in the Supabase SQL Editor after creating your project.
+-- Run after 000_reset.sql (or on a fresh Supabase project).
 
 -- ---------------------------------------------------------------------------
 -- Tables
@@ -7,13 +7,13 @@
 
 CREATE TABLE profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  auth_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   passkey_hash TEXT,
   passkey_salt TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT profiles_auth_user_name_unique UNIQUE (auth_user_id, name)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX profiles_name_lower_unique ON profiles (lower(trim(name)));
 
 CREATE TABLE categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -52,7 +52,6 @@ CREATE TABLE expense_tags (
 -- Indexes
 -- ---------------------------------------------------------------------------
 
-CREATE INDEX idx_profiles_auth_user_id ON profiles(auth_user_id);
 CREATE INDEX idx_tags_category_id ON tags(category_id);
 CREATE INDEX idx_expenses_profile_id_date ON expenses(profile_id, date DESC);
 CREATE INDEX idx_expenses_category_id ON expenses(category_id);
@@ -68,60 +67,50 @@ ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expense_tags ENABLE ROW LEVEL SECURITY;
 
--- Profiles: each anonymous auth user owns their profiles
-CREATE POLICY "profiles_select_own" ON profiles
-  FOR SELECT USING (auth_user_id = auth.uid());
+-- Profiles: global list on login page
+CREATE POLICY "profiles_select_auth" ON profiles
+  FOR SELECT USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "profiles_insert_own" ON profiles
-  FOR INSERT WITH CHECK (auth_user_id = auth.uid());
+CREATE POLICY "profiles_insert_auth" ON profiles
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
-CREATE POLICY "profiles_update_own" ON profiles
-  FOR UPDATE USING (auth_user_id = auth.uid()) WITH CHECK (auth_user_id = auth.uid());
-
-CREATE POLICY "profiles_delete_own" ON profiles
-  FOR DELETE USING (auth_user_id = auth.uid());
-
--- Categories: shared across all authenticated users
+-- Categories & tags: shared globally
 CREATE POLICY "categories_select_auth" ON categories
   FOR SELECT USING (auth.uid() IS NOT NULL);
 
 CREATE POLICY "categories_insert_auth" ON categories
   FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
--- Tags: shared across all authenticated users
 CREATE POLICY "tags_select_auth" ON tags
   FOR SELECT USING (auth.uid() IS NOT NULL);
 
 CREATE POLICY "tags_insert_auth" ON tags
   FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
--- Expenses: scoped via profile ownership
-CREATE POLICY "expenses_all_own" ON expenses
+-- Expenses: per profile, any authenticated user (passkey gates profile access in the app)
+CREATE POLICY "expenses_all_auth" ON expenses
   FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles p
-      WHERE p.id = expenses.profile_id AND p.auth_user_id = auth.uid()
-    )
+    auth.uid() IS NOT NULL
+    AND EXISTS (SELECT 1 FROM profiles p WHERE p.id = expenses.profile_id)
   ) WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles p
-      WHERE p.id = expenses.profile_id AND p.auth_user_id = auth.uid()
-    )
+    auth.uid() IS NOT NULL
+    AND EXISTS (SELECT 1 FROM profiles p WHERE p.id = profile_id)
   );
 
--- Expense tags: scoped via expense → profile; tag must belong to expense category
-CREATE POLICY "expense_tags_all_own" ON expense_tags
+CREATE POLICY "expense_tags_all_auth" ON expense_tags
   FOR ALL USING (
-    EXISTS (
+    auth.uid() IS NOT NULL
+    AND EXISTS (
       SELECT 1 FROM expenses e
       JOIN profiles p ON p.id = e.profile_id
-      WHERE e.id = expense_tags.expense_id AND p.auth_user_id = auth.uid()
+      WHERE e.id = expense_tags.expense_id
     )
   ) WITH CHECK (
-    EXISTS (
+    auth.uid() IS NOT NULL
+    AND EXISTS (
       SELECT 1 FROM expenses e
       JOIN profiles p ON p.id = e.profile_id
-      WHERE e.id = expense_tags.expense_id AND p.auth_user_id = auth.uid()
+      WHERE e.id = expense_tags.expense_id
     )
     AND EXISTS (
       SELECT 1 FROM tags t
@@ -131,7 +120,7 @@ CREATE POLICY "expense_tags_all_own" ON expense_tags
   );
 
 -- ---------------------------------------------------------------------------
--- Realtime (live updates in the app)
+-- Realtime
 -- ---------------------------------------------------------------------------
 
 ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
