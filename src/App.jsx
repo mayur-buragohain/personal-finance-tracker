@@ -11,12 +11,14 @@ import { isAdminLoggedIn } from './utils/admin';
 import UserSelect from './components/UserSelect';
 import AdminPanel from './components/AdminPanel';
 import AddExpense from './components/AddExpense';
+import BulkExpense from './components/BulkExpense';
 import ExpenseLog from './components/ExpenseLog';
 import Report from './components/Report';
 import './App.css';
 
 const TABS = [
   { id: 'home', label: 'Home', icon: '₹' },
+  { id: 'bulk', label: 'Bulk', icon: '⊕' },
   { id: 'log', label: 'Log', icon: '📋' },
   { id: 'report', label: 'Report', icon: '📊' },
 ];
@@ -165,6 +167,9 @@ VITE_SUPABASE_ANON_KEY=your_anon_key`}</pre>
       <main className={`app-main ${isHome ? 'app-main--home' : ''}`}>
         {activeTab === 'home' && (
           <AddExpense profileId={activeProfile.id} categories={categories} />
+        )}
+        {activeTab === 'bulk' && (
+          <BulkExpense profileId={activeProfile.id} categories={categories} />
         )}
         {activeTab === 'log' && (
           <ExpenseLog

@@ -8,6 +8,8 @@ function mapTag(row) {
   };
 }
 
+const tagChannelRegistry = new Map();
+
 export async function fetchTags(categoryId) {
   const { data, error } = await supabase
     .from('tags')
@@ -25,33 +27,50 @@ export function subscribeTags(categoryId, onUpdate) {
     return () => {};
   }
 
-  const load = async () => {
-    try {
-      const tags = await fetchTags(categoryId);
-      onUpdate(tags);
-    } catch (err) {
-      console.error('Failed to load tags:', err);
-    }
-  };
+  let entry = tagChannelRegistry.get(categoryId);
 
-  load();
+  if (!entry) {
+    const listeners = new Set();
 
-  const channel = supabase
-    .channel(`tags-${categoryId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'tags',
-        filter: `category_id=eq.${categoryId}`,
-      },
-      load
-    )
-    .subscribe();
+    const notify = async () => {
+      try {
+        const tags = await fetchTags(categoryId);
+        listeners.forEach((listener) => listener(tags));
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      }
+    };
+
+    const channel = supabase
+      .channel(`tags-${categoryId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tags',
+          filter: `category_id=eq.${categoryId}`,
+        },
+        notify
+      )
+      .subscribe();
+
+    entry = { channel, listeners, notify };
+    tagChannelRegistry.set(categoryId, entry);
+  }
+
+  entry.listeners.add(onUpdate);
+  entry.notify();
 
   return () => {
-    supabase.removeChannel(channel);
+    const current = tagChannelRegistry.get(categoryId);
+    if (!current) return;
+
+    current.listeners.delete(onUpdate);
+    if (current.listeners.size === 0) {
+      supabase.removeChannel(current.channel);
+      tagChannelRegistry.delete(categoryId);
+    }
   };
 }
 

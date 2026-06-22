@@ -110,6 +110,12 @@ export async function createExpense(profileId, { amount, categoryId, date, tagId
   return expense.id;
 }
 
+export async function createExpensesBulk(profileId, items) {
+  for (const item of items) {
+    await createExpense(profileId, item);
+  }
+}
+
 export async function updateExpense(expenseId, { date, categoryId, tagIds }) {
   const { error } = await supabase
     .from('expenses')

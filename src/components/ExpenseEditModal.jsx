@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { addCategory } from '../utils/categories';
 import { updateExpense } from '../utils/expenses';
 import { addTag, subscribeTags } from '../utils/tags';
@@ -32,6 +33,13 @@ export default function ExpenseEditModal({
   const [newTagName, setNewTagName] = useState('');
   const [tagError, setTagError] = useState('');
   const [addingTag, setAddingTag] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   useEffect(() => {
     if (!categoryId) {
@@ -141,15 +149,14 @@ export default function ExpenseEditModal({
     }
   };
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
+  return createPortal(
+    <div className="modal-overlay modal-overlay--center" onClick={onClose}>
       <div
-        className="bottom-sheet slide-up edit-sheet"
+        className="center-sheet slide-up edit-sheet"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-labelledby="edit-expense-title"
       >
-        <div className="sheet-handle" />
         <h2 id="edit-expense-title" className="sheet-title">Edit Expense</h2>
         <p className="sheet-subtitle">{formatINR(expense.amount)}</p>
 
@@ -319,6 +326,7 @@ export default function ExpenseEditModal({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
