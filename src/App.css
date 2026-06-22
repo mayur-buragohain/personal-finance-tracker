@@ -834,6 +834,85 @@
   gap: 6px;
 }
 
+.bar-chart-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bar-chart-toggle:active {
+  opacity: 0.85;
+}
+
+.bar-chart-chevron {
+  display: inline-block;
+  width: 0.85rem;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-right: 2px;
+  vertical-align: middle;
+}
+
+.bar-chart-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0 4px 1.1rem;
+}
+
+.bar-chart-tag-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.bar-chart-tag-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar-chart-tag-name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.bar-chart-tag-name.bar-chart-tag-untagged {
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.bar-chart-tag-amount {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.bar-track-tag {
+  height: 6px;
+}
+
+.tag-breakdown-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  margin: 2px 0 0;
+}
+
 .bar-chart-header {
   display: flex;
   justify-content: space-between;

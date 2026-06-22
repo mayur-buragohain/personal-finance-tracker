@@ -1,5 +1,46 @@
 import { useMemo, useState } from 'react';
-import { formatINR, formatDisplayDate, formatMonthLabel, monthKey, resolveCategory, todayISO } from '../utils/helpers';
+import {
+  formatINR,
+  formatDisplayDate,
+  formatMonthLabel,
+  getExpenseTags,
+  monthKey,
+  resolveCategory,
+  todayISO,
+} from '../utils/helpers';
+
+function buildCategoryTagBreakdown(categoryId, monthExpenses) {
+  const tagTotals = {};
+  let untaggedTotal = 0;
+  let hasMultiTagExpense = false;
+
+  monthExpenses
+    .filter((e) => e.categoryId === categoryId)
+    .forEach((expense) => {
+      const tags = getExpenseTags(expense);
+      if (tags.length === 0) {
+        untaggedTotal += expense.amount;
+        return;
+      }
+
+      if (tags.length > 1) {
+        hasMultiTagExpense = true;
+      }
+
+      tags.forEach((tag) => {
+        if (!tagTotals[tag.id]) {
+          tagTotals[tag.id] = { id: tag.id, label: tag.label, amount: 0 };
+        }
+        tagTotals[tag.id].amount += expense.amount;
+      });
+    });
+
+  return {
+    tags: Object.values(tagTotals).sort((a, b) => b.amount - a.amount),
+    untaggedTotal,
+    hasMultiTagExpense,
+  };
+}
 
 export default function Report({ expenses, categories }) {
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
@@ -12,6 +53,16 @@ export default function Report({ expenses, categories }) {
   }, [expenses, currentMonth]);
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [expandedCategoryId, setExpandedCategoryId] = useState(null);
+
+  const handleMonthChange = (month) => {
+    setSelectedMonth(month);
+    setExpandedCategoryId(null);
+  };
+
+  const toggleCategoryExpand = (categoryId) => {
+    setExpandedCategoryId((current) => (current === categoryId ? null : categoryId));
+  };
 
   const monthExpenses = useMemo(
     () => expenses.filter((e) => monthKey(e.date) === selectedMonth),
@@ -44,6 +95,14 @@ export default function Report({ expenses, categories }) {
   }, [monthExpenses, categoryMap]);
 
   const maxCategoryAmount = categoryBreakdown[0]?.amount || 1;
+
+  const categoryTagBreakdowns = useMemo(() => {
+    const breakdowns = {};
+    categoryBreakdown.forEach(({ id }) => {
+      breakdowns[id] = buildCategoryTagBreakdown(id, monthExpenses);
+    });
+    return breakdowns;
+  }, [categoryBreakdown, monthExpenses]);
 
   const dayBreakdown = useMemo(() => {
     const totals = {};
@@ -80,7 +139,7 @@ export default function Report({ expenses, categories }) {
           id="month-select"
           className="text-input select-input"
           value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
+          onChange={(e) => handleMonthChange(e.target.value)}
         >
           {availableMonths.map((m) => (
             <option key={m} value={m}>
@@ -105,25 +164,98 @@ export default function Report({ expenses, categories }) {
           <div className="report-section">
             <h2 className="section-title">By Category</h2>
             <div className="bar-chart-list">
-              {categoryBreakdown.map((item) => (
-                <div key={item.id} className="bar-chart-row">
-                  <div className="bar-chart-header">
-                    <span className="bar-chart-label">
-                      {item.category.icon} {item.category.label}
-                    </span>
-                    <span className="bar-chart-value">{formatINR(item.amount)}</span>
+              {categoryBreakdown.map((item) => {
+                const isExpanded = expandedCategoryId === item.id;
+                const tagBreakdown = categoryTagBreakdowns[item.id];
+                const maxTagAmount = Math.max(
+                  ...tagBreakdown.tags.map((t) => t.amount),
+                  tagBreakdown.untaggedTotal,
+                  1
+                );
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`bar-chart-row${isExpanded ? ' bar-chart-row-expanded' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="bar-chart-toggle"
+                      onClick={() => toggleCategoryExpand(item.id)}
+                      aria-expanded={isExpanded}
+                    >
+                      <div className="bar-chart-header">
+                        <span className="bar-chart-label">
+                          <span className="bar-chart-chevron" aria-hidden="true">
+                            {isExpanded ? '▼' : '▶'}
+                          </span>
+                          {item.category.icon} {item.category.label}
+                        </span>
+                        <span className="bar-chart-value">{formatINR(item.amount)}</span>
+                      </div>
+                      <div className="bar-track">
+                        <div
+                          className="bar-fill horizontal"
+                          style={{
+                            width: `${(item.amount / maxCategoryAmount) * 100}%`,
+                            backgroundColor: item.category.color,
+                          }}
+                        />
+                      </div>
+                    </button>
+
+                    {isExpanded && (
+                      <div className="bar-chart-tags">
+                        {tagBreakdown.tags.map((tag) => (
+                          <div key={tag.id} className="bar-chart-tag-row">
+                            <div className="bar-chart-tag-info">
+                              <span className="bar-chart-tag-name">{tag.label}</span>
+                              <div className="bar-track bar-track-tag">
+                                <div
+                                  className="bar-fill horizontal"
+                                  style={{
+                                    width: `${(tag.amount / maxTagAmount) * 100}%`,
+                                    backgroundColor: item.category.color,
+                                    opacity: 0.55,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <span className="bar-chart-tag-amount">{formatINR(tag.amount)}</span>
+                          </div>
+                        ))}
+                        {tagBreakdown.untaggedTotal > 0 && (
+                          <div className="bar-chart-tag-row">
+                            <div className="bar-chart-tag-info">
+                              <span className="bar-chart-tag-name bar-chart-tag-untagged">
+                                Untagged
+                              </span>
+                              <div className="bar-track bar-track-tag">
+                                <div
+                                  className="bar-fill horizontal"
+                                  style={{
+                                    width: `${(tagBreakdown.untaggedTotal / maxTagAmount) * 100}%`,
+                                    backgroundColor: 'var(--text-muted)',
+                                    opacity: 0.35,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <span className="bar-chart-tag-amount">
+                              {formatINR(tagBreakdown.untaggedTotal)}
+                            </span>
+                          </div>
+                        )}
+                        {tagBreakdown.hasMultiTagExpense && (
+                          <p className="tag-breakdown-hint">
+                            Amounts may overlap when an expense has multiple tags.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="bar-track">
-                    <div
-                      className="bar-fill horizontal"
-                      style={{
-                        width: `${(item.amount / maxCategoryAmount) * 100}%`,
-                        backgroundColor: item.category.color,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
