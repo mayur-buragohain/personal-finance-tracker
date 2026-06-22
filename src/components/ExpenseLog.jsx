@@ -157,6 +157,9 @@ export default function ExpenseLog({ profileId, expenses, categories }) {
                       </div>
                       <div className="expense-details">
                         <span className="expense-category">{category.label}</span>
+                        {expense.note && (
+                          <span className="expense-note">{expense.note}</span>
+                        )}
                         {expenseTags.length > 0 && (
                           <div className="expense-tags">
                             {expenseTags.map((tag) => (

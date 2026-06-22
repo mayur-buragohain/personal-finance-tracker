@@ -8,6 +8,7 @@ import {
   getExpenseTags,
   randomCategoryColor,
   formatINR,
+  EXPENSE_NOTE_MAX,
 } from '../utils/helpers';
 
 export default function ExpenseEditModal({
@@ -33,6 +34,7 @@ export default function ExpenseEditModal({
   const [newTagName, setNewTagName] = useState('');
   const [tagError, setTagError] = useState('');
   const [addingTag, setAddingTag] = useState(false);
+  const [note, setNote] = useState(expense.note || '');
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -75,6 +77,7 @@ export default function ExpenseEditModal({
         date,
         categoryId,
         tagIds: selectedTagIds,
+        note,
       });
       onClose();
     } catch (err) {
@@ -228,6 +231,19 @@ export default function ExpenseEditModal({
             </button>
           </div>
         )}
+
+        <div className="field-group field-group--centered">
+          <label htmlFor="edit-note" className="field-label">Note (optional)</label>
+          <input
+            id="edit-note"
+            type="text"
+            className="text-input landing-control"
+            placeholder="Add a short note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            maxLength={EXPENSE_NOTE_MAX}
+          />
+        </div>
 
         {error && <p className="field-error">{error}</p>}
 

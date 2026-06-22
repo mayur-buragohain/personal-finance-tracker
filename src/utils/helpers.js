@@ -82,3 +82,10 @@ export function getExpenseTags(expense) {
 }
 
 export const ADD_CATEGORY = '__add_new__';
+
+export const EXPENSE_NOTE_MAX = 200;
+
+export function normalizeExpenseNote(note) {
+  const trimmed = note?.trim() ?? '';
+  return trimmed || null;
+}

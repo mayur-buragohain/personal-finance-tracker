@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { normalizeExpenseNote } from './helpers';
 
 export function mapExpenseRow(row) {
   const tags = (row.expense_tags || [])
@@ -12,6 +13,7 @@ export function mapExpenseRow(row) {
     amount: Number(row.amount),
     categoryId: row.category_id,
     date: row.date,
+    note: row.note || '',
     createdAt: row.created_at,
     tags,
     category: row.categories
@@ -29,6 +31,7 @@ const EXPENSE_SELECT = `
   id,
   amount,
   date,
+  note,
   created_at,
   category_id,
   categories ( id, label, icon, color ),
@@ -83,7 +86,7 @@ export function subscribeExpenses(profileId, onUpdate) {
   };
 }
 
-export async function createExpense(profileId, { amount, categoryId, date, tagIds }) {
+export async function createExpense(profileId, { amount, categoryId, date, tagIds, note }) {
   const { data: expense, error } = await supabase
     .from('expenses')
     .insert({
@@ -91,6 +94,7 @@ export async function createExpense(profileId, { amount, categoryId, date, tagId
       category_id: categoryId,
       amount,
       date,
+      note: normalizeExpenseNote(note),
     })
     .select('id')
     .single();
@@ -116,10 +120,14 @@ export async function createExpensesBulk(profileId, items) {
   }
 }
 
-export async function updateExpense(expenseId, { date, categoryId, tagIds }) {
+export async function updateExpense(expenseId, { date, categoryId, tagIds, note }) {
   const { error } = await supabase
     .from('expenses')
-    .update({ date, category_id: categoryId })
+    .update({
+      date,
+      category_id: categoryId,
+      note: normalizeExpenseNote(note),
+    })
     .eq('id', expenseId);
 
   if (error) throw error;

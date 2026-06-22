@@ -21,6 +21,12 @@ A mobile-first personal daily expense tracker built with React, Vite, and Supaba
 
 ---
 
+## Account details
+ - supabase
+  - mayur.buragohain@gmail.com
+  - Ixia first password
+
+
 ## Step-by-Step Setup Guide
 
 ### 1. Create a Supabase Project

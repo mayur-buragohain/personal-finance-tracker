@@ -39,6 +39,7 @@ CREATE TABLE expenses (
   category_id UUID NOT NULL REFERENCES categories(id),
   amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
   date DATE NOT NULL,
+  note TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

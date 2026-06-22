@@ -160,6 +160,9 @@ export default function Report({ expenses, categories }) {
                       <span className="top-expense-cat">
                         {category.icon} {category.label}
                       </span>
+                      {expense.note && (
+                        <span className="top-expense-note">{expense.note}</span>
+                      )}
                       <span className="top-expense-date">{formatDisplayDate(expense.date)}</span>
                     </div>
                     <span className="top-expense-amount">{formatINR(expense.amount)}</span>

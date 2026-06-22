@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { addCategory } from '../utils/categories';
 import { createExpense } from '../utils/expenses';
 import { addTag, subscribeTags } from '../utils/tags';
-import { randomCategoryColor, todayISO, ADD_CATEGORY } from '../utils/helpers';
+import { randomCategoryColor, todayISO, ADD_CATEGORY, EXPENSE_NOTE_MAX } from '../utils/helpers';
 
 export default function AddExpense({ profileId, categories }) {
   const [date, setDate] = useState(todayISO());
@@ -21,6 +21,8 @@ export default function AddExpense({ profileId, categories }) {
   const [newTagName, setNewTagName] = useState('');
   const [tagError, setTagError] = useState('');
   const [addingTag, setAddingTag] = useState(false);
+  const [showNoteField, setShowNoteField] = useState(false);
+  const [note, setNote] = useState('');
 
   useEffect(() => {
     if (!categoryId) {
@@ -51,11 +53,14 @@ export default function AddExpense({ profileId, categories }) {
         categoryId,
         date,
         tagIds: selectedTagIds,
+        note,
       });
 
       setAmount('');
       setCategoryId('');
       setSelectedTagIds([]);
+      setNote('');
+      setShowNoteField(false);
       setDate(todayISO());
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -236,6 +241,32 @@ export default function AddExpense({ profileId, categories }) {
           <button type="button" className="add-category-link" onClick={openTagModal}>
             + Add new tag
           </button>
+        </div>
+      )}
+
+      {!showNoteField ? (
+        <button
+          type="button"
+          className="add-category-link"
+          onClick={() => setShowNoteField(true)}
+        >
+          + Add note (optional)
+        </button>
+      ) : (
+        <div className="field-group field-group--centered">
+          <label htmlFor="expense-note" className="field-label">Note</label>
+          <input
+            id="expense-note"
+            type="text"
+            className="text-input landing-control"
+            placeholder="e.g. Lunch with team"
+            value={note}
+            onChange={(e) => {
+              setNote(e.target.value);
+              setSaved(false);
+            }}
+            maxLength={EXPENSE_NOTE_MAX}
+          />
         </div>
       )}
 
