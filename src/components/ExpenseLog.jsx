@@ -3,28 +3,199 @@ import { deleteExpense } from '../utils/expenses';
 import {
   formatDisplayDate,
   formatINR,
+  formatMonthLabel,
   getExpenseTags,
+  monthKey,
   resolveCategory,
+  todayISO,
 } from '../utils/helpers';
 import ExpenseEditModal from './ExpenseEditModal';
 
 const SWIPE_THRESHOLD = 80;
 
+const DATE_FILTER = {
+  all: 'all',
+  month: 'month',
+  range: 'range',
+};
+
+function normalizeDateRange(from, to) {
+  if (!from && !to) {
+    return { start: null, end: null };
+  }
+
+  const start = from || to;
+  const end = to || from;
+  return start <= end ? { start, end } : { start: end, end: start };
+}
+
+function matchesDateFilter(expense, mode, month, from, to) {
+  if (mode === DATE_FILTER.all) {
+    return true;
+  }
+
+  if (mode === DATE_FILTER.month) {
+    return monthKey(expense.date) === month;
+  }
+
+  const { start, end } = normalizeDateRange(from, to);
+  if (!start) {
+    return true;
+  }
+
+  return expense.date >= start && expense.date <= end;
+}
+
+function formatDateRangeLabel(from, to) {
+  const { start, end } = normalizeDateRange(from, to);
+  if (!start) {
+    return '';
+  }
+  if (start === end) {
+    return formatDisplayDate(start);
+  }
+  return `${formatDisplayDate(start)} – ${formatDisplayDate(end)}`;
+}
+
+function buildFilterSummary({
+  dateFilterMode,
+  filterMonth,
+  filterFromDate,
+  filterToDate,
+  filterCategoryId,
+  categoryMap,
+  count,
+  total,
+}) {
+  const parts = [];
+
+  if (dateFilterMode === DATE_FILTER.month) {
+    parts.push(formatMonthLabel(filterMonth));
+  } else if (dateFilterMode === DATE_FILTER.range && (filterFromDate || filterToDate)) {
+    parts.push(formatDateRangeLabel(filterFromDate, filterToDate));
+  }
+
+  if (filterCategoryId) {
+    const category = categoryMap[filterCategoryId];
+    parts.push(category ? `${category.icon} ${category.label}` : 'Selected category');
+  }
+
+  const label = parts.length > 0 ? parts.join(' · ') : 'Filtered';
+  return `${label} · ${count} expense${count === 1 ? '' : 's'} · ${formatINR(total)}`;
+}
+
+function buildEmptyFilterMessage({
+  dateFilterMode,
+  filterMonth,
+  filterFromDate,
+  filterToDate,
+  filterCategoryId,
+  categoryMap,
+}) {
+  const parts = [];
+
+  if (dateFilterMode === DATE_FILTER.month) {
+    parts.push(formatMonthLabel(filterMonth));
+  } else if (dateFilterMode === DATE_FILTER.range && (filterFromDate || filterToDate)) {
+    parts.push(formatDateRangeLabel(filterFromDate, filterToDate));
+  }
+
+  if (filterCategoryId) {
+    const category = categoryMap[filterCategoryId];
+    parts.push(category ? `${category.icon} ${category.label}` : 'this category');
+  }
+
+  if (parts.length === 0) {
+    return 'No expenses match your filters.';
+  }
+
+  return `No expenses for ${parts.join(' · ')}.`;
+}
+
 export default function ExpenseLog({ profileId, expenses, categories }) {
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
-  const [filterDate, setFilterDate] = useState('');
+  const currentMonth = monthKey(todayISO());
+
+  const [dateFilterMode, setDateFilterMode] = useState(DATE_FILTER.all);
+  const [filterMonth, setFilterMonth] = useState(currentMonth);
+  const [filterFromDate, setFilterFromDate] = useState('');
+  const [filterToDate, setFilterToDate] = useState('');
+  const [filterCategoryId, setFilterCategoryId] = useState('');
   const [editingExpense, setEditingExpense] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const swipeState = useRef({ id: null, startX: 0, currentX: 0 });
 
-  const availableDates = useMemo(() => {
-    const dates = [...new Set(expenses.map((e) => e.date))];
-    return dates.sort((a, b) => b.localeCompare(a));
-  }, [expenses]);
+  const availableMonths = useMemo(() => {
+    const months = new Set(expenses.map((e) => monthKey(e.date)));
+    months.add(currentMonth);
+    return Array.from(months).sort((a, b) => b.localeCompare(a));
+  }, [expenses, currentMonth]);
+
+  const sortedCategories = useMemo(
+    () => [...categories].sort((a, b) => a.label.localeCompare(b.label)),
+    [categories]
+  );
 
   const filteredExpenses = useMemo(
-    () => (filterDate ? expenses.filter((e) => e.date === filterDate) : expenses),
-    [expenses, filterDate]
+    () =>
+      expenses.filter((expense) => {
+        if (filterCategoryId && expense.categoryId !== filterCategoryId) {
+          return false;
+        }
+        return matchesDateFilter(
+          expense,
+          dateFilterMode,
+          filterMonth,
+          filterFromDate,
+          filterToDate
+        );
+      }),
+    [expenses, dateFilterMode, filterMonth, filterFromDate, filterToDate, filterCategoryId]
+  );
+
+  const filteredTotal = useMemo(
+    () => filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0),
+    [filteredExpenses]
+  );
+
+  const hasActiveFilters =
+    dateFilterMode !== DATE_FILTER.all || filterCategoryId !== '';
+
+  const filterSummary = useMemo(
+    () =>
+      buildFilterSummary({
+        dateFilterMode,
+        filterMonth,
+        filterFromDate,
+        filterToDate,
+        filterCategoryId,
+        categoryMap,
+        count: filteredExpenses.length,
+        total: filteredTotal,
+      }),
+    [
+      dateFilterMode,
+      filterMonth,
+      filterFromDate,
+      filterToDate,
+      filterCategoryId,
+      categoryMap,
+      filteredExpenses.length,
+      filteredTotal,
+    ]
+  );
+
+  const emptyFilterMessage = useMemo(
+    () =>
+      buildEmptyFilterMessage({
+        dateFilterMode,
+        filterMonth,
+        filterFromDate,
+        filterToDate,
+        filterCategoryId,
+        categoryMap,
+      }),
+    [dateFilterMode, filterMonth, filterFromDate, filterToDate, filterCategoryId, categoryMap]
   );
 
   const groupedExpenses = useMemo(() => {
@@ -103,26 +274,118 @@ export default function ExpenseLog({ profileId, expenses, categories }) {
 
   return (
     <section className="panel expense-log fade-in">
-      <div className="log-filter">
-        <label htmlFor="date-filter" className="field-label">Filter by date</label>
-        <select
-          id="date-filter"
-          className="text-input select-input"
-          value={filterDate}
-          onChange={(e) => setFilterDate(e.target.value)}
-        >
-          <option value="">All dates</option>
-          {availableDates.map((date) => (
-            <option key={date} value={date}>
-              {formatDisplayDate(date)}
-            </option>
-          ))}
-        </select>
+      <div className="log-filters">
+        <div className="field-group">
+          <span className="field-label">When</span>
+          <div className="log-filter-mode" role="tablist" aria-label="Filter by when">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={dateFilterMode === DATE_FILTER.all}
+              className={`log-filter-mode-btn ${dateFilterMode === DATE_FILTER.all ? 'active' : ''}`}
+              onClick={() => setDateFilterMode(DATE_FILTER.all)}
+            >
+              All
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={dateFilterMode === DATE_FILTER.month}
+              className={`log-filter-mode-btn ${dateFilterMode === DATE_FILTER.month ? 'active' : ''}`}
+              onClick={() => setDateFilterMode(DATE_FILTER.month)}
+            >
+              Month
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={dateFilterMode === DATE_FILTER.range}
+              className={`log-filter-mode-btn ${dateFilterMode === DATE_FILTER.range ? 'active' : ''}`}
+              onClick={() => setDateFilterMode(DATE_FILTER.range)}
+            >
+              Range
+            </button>
+          </div>
+        </div>
+
+        {dateFilterMode === DATE_FILTER.month && (
+          <div className="field-group">
+            <label htmlFor="log-month-filter" className="field-label">
+              Month
+            </label>
+            <select
+              id="log-month-filter"
+              className="text-input select-input"
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+            >
+              {availableMonths.map((month) => (
+                <option key={month} value={month}>
+                  {formatMonthLabel(month)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {dateFilterMode === DATE_FILTER.range && (
+          <div className="log-filter-range">
+            <div className="field-group">
+              <label htmlFor="log-from-date" className="field-label">
+                From
+              </label>
+              <input
+                id="log-from-date"
+                type="date"
+                className="text-input"
+                value={filterFromDate}
+                onChange={(e) => setFilterFromDate(e.target.value)}
+              />
+            </div>
+            <div className="field-group">
+              <label htmlFor="log-to-date" className="field-label">
+                To
+              </label>
+              <input
+                id="log-to-date"
+                type="date"
+                className="text-input"
+                value={filterToDate}
+                onChange={(e) => setFilterToDate(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="field-group">
+          <label htmlFor="log-category-filter" className="field-label">
+            Category
+          </label>
+          <select
+            id="log-category-filter"
+            className="text-input select-input"
+            value={filterCategoryId}
+            onChange={(e) => setFilterCategoryId(e.target.value)}
+          >
+            <option value="">All categories</option>
+            {sortedCategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.icon} {category.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {hasActiveFilters && (
+          <p className="log-filter-summary" aria-live="polite">
+            {filterSummary}
+          </p>
+        )}
       </div>
 
       {groupedExpenses.length === 0 ? (
         <div className="empty-state compact">
-          <p>No expenses for this date.</p>
+          <p>{emptyFilterMessage}</p>
         </div>
       ) : (
         groupedExpenses.map((group) => (
