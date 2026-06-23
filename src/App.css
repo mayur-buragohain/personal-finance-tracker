@@ -338,20 +338,12 @@
   min-height: 36px;
 }
 
-.category-grid--compact {
-  gap: 4px;
-}
-
-.category-grid--4col {
-  grid-template-columns: repeat(4, 1fr);
-}
-
 .category-chip--compact {
   min-height: 0;
-  height: 36px;
-  padding: 1px;
+  height: 27px;
+  padding: 0 1px;
   gap: 0;
-  border-radius: 7px;
+  border-radius: 6px;
   border-width: 1px;
 }
 
@@ -360,12 +352,12 @@
 }
 
 .category-chip--compact .category-icon {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   line-height: 1;
 }
 
 .category-chip--compact .category-label {
-  font-size: 0.45rem;
+  font-size: 0.42rem;
   line-height: 1;
   max-width: 100%;
   overflow: hidden;
@@ -582,6 +574,14 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
+}
+
+.category-grid.category-grid--compact {
+  gap: 3px;
+}
+
+.category-grid.category-grid--4col {
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .category-chip {
