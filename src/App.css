@@ -199,8 +199,178 @@
 .app-main--home {
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  padding: 10px 16px calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Home — single add */
+
+.home-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.field-label--soft {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.add-date-wrap {
+  display: flex;
   justify-content: center;
-  padding: 24px 20px calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+.add-date-field {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.add-date-input {
+  width: 168px;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.add-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.75;
+  filter: invert(0.85);
+}
+
+.home-card-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-card-section--tags .home-tag-chips {
+  min-height: 48px;
+  align-content: flex-start;
+}
+
+.home-tag-chips {
+  justify-content: flex-start;
+  gap: 5px;
+}
+
+.home-tag-chips .option-chip--tag {
+  min-height: unset;
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  border-width: 1px;
+}
+
+.home-note-input {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 0.9rem;
+}
+
+.home-card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.home-card-save {
+  width: 100%;
+  min-height: 40px;
+  font-size: 0.95rem;
+}
+
+.text-link-btn {
+  align-self: flex-start;
+  min-height: 24px;
+  padding: 0 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  transition: color var(--transition);
+}
+
+.text-link-btn:hover {
+  color: var(--accent-hover);
+}
+
+.amount-section--hero {
+  text-align: center;
+  padding: 8px 10px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(108, 92, 231, 0.08);
+  border: 1px solid transparent;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.amount-section--hero:focus-within {
+  border-color: rgba(108, 92, 231, 0.3);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.amount-section--hero .currency-symbol {
+  font-size: 1.5rem;
+}
+
+.amount-section--hero .amount-input-wrap {
+  margin-top: 4px;
+}
+
+.amount-section--hero .amount-input {
+  font-size: 2.1rem;
+  min-height: 36px;
+}
+
+.category-grid--compact {
+  gap: 4px;
+}
+
+.category-grid--4col {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.category-chip--compact {
+  min-height: 0;
+  height: 36px;
+  padding: 1px;
+  gap: 0;
+  border-radius: 7px;
+  border-width: 1px;
+}
+
+.category-chip--compact.add-new {
+  border-width: 1px;
+}
+
+.category-chip--compact .category-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.category-chip--compact .category-label {
+  font-size: 0.45rem;
+  line-height: 1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .landing {
@@ -392,7 +562,8 @@
   width: 100%;
   max-width: 280px;
   min-height: var(--tap-min);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
 

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { addCategory } from '../utils/categories';
 import { createExpense } from '../utils/expenses';
 import { addTag, subscribeTags } from '../utils/tags';
-import { randomCategoryColor, todayISO, ADD_CATEGORY, EXPENSE_NOTE_MAX } from '../utils/helpers';
+import { randomCategoryColor, todayISO, EXPENSE_NOTE_MAX } from '../utils/helpers';
 
 export default function AddExpense({ profileId, categories }) {
+  const dateInputRef = useRef(null);
   const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -31,6 +32,19 @@ export default function AddExpense({ profileId, categories }) {
     }
     return subscribeTags(categoryId, setTags);
   }, [categoryId]);
+
+  const openDatePicker = useCallback(() => {
+    const input = dateInputRef.current;
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    if (typeof input.showPicker === 'function') {
+      try {
+        input.showPicker();
+      } catch {
+        /* showPicker unavailable or blocked */
+      }
+    }
+  }, []);
 
   const handleAmountChange = (e) => {
     const value = e.target.value;
@@ -137,6 +151,12 @@ export default function AddExpense({ profileId, categories }) {
     }
   };
 
+  const selectCategory = (id) => {
+    setCategoryId(id);
+    setSelectedTagIds([]);
+    setSaved(false);
+  };
+
   const toggleTag = (id) => {
     setSelectedTagIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -160,23 +180,29 @@ export default function AddExpense({ profileId, categories }) {
   const canSave = amount && parseFloat(amount) > 0 && categoryId && !saving;
 
   return (
-    <section className="landing fade-in">
-      <div className="field-group field-group--centered">
-        <label htmlFor="date" className="field-label">Date</label>
-        <input
-          id="date"
-          type="date"
-          className="text-input date-input landing-control"
-          value={date}
-          onChange={(e) => {
-            setDate(e.target.value);
-            setSaved(false);
-          }}
-        />
+    <section className="home-card fade-in">
+      <div className="add-date-wrap">
+        <label htmlFor="expense-date" className="add-date-field" onClick={openDatePicker}>
+          <input
+            ref={dateInputRef}
+            id="expense-date"
+            type="date"
+            className="text-input date-input add-date-input"
+            value={date}
+            onChange={(e) => {
+              setDate(e.target.value);
+              setSaved(false);
+            }}
+            onClick={openDatePicker}
+            aria-label="Expense date"
+          />
+        </label>
       </div>
 
-      <div className="amount-section">
-        <label htmlFor="amount" className="field-label">Amount</label>
+      <div className="amount-section amount-section--hero">
+        <label htmlFor="amount" className="field-label field-label--soft">
+          Amount
+        </label>
         <div className="amount-input-wrap">
           <span className="currency-symbol">₹</span>
           <input
@@ -192,73 +218,69 @@ export default function AddExpense({ profileId, categories }) {
         </div>
       </div>
 
-      <div className="field-group field-group--centered">
-        <label htmlFor="category" className="field-label">Category</label>
-        <select
-          id="category"
-          className="text-input select-input landing-control"
-          value={categoryId}
-          onChange={(e) => {
-            const value = e.target.value;
-            if (value === ADD_CATEGORY) {
-              openCategoryModal();
-              return;
-            }
-            setCategoryId(value);
-            setSelectedTagIds([]);
-            setSaved(false);
-          }}
-        >
-          <option value="">Select category</option>
+      <div className="home-card-section">
+        <span className="field-label field-label--soft">Category</span>
+        <div className="category-grid category-grid--compact category-grid--4col">
           {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.icon} {cat.label}
-            </option>
+            <button
+              key={cat.id}
+              type="button"
+              className={`category-chip category-chip--compact ${categoryId === cat.id ? 'selected' : ''}`}
+              style={{ '--cat-color': cat.color }}
+              onClick={() => selectCategory(cat.id)}
+              aria-pressed={categoryId === cat.id}
+              title={cat.label}
+            >
+              <span className="category-icon">{cat.icon}</span>
+              <span className="category-label">{cat.label}</span>
+            </button>
           ))}
-          <option value={ADD_CATEGORY}>+ Add new category</option>
-        </select>
+          <button
+            type="button"
+            className="category-chip category-chip--compact add-new"
+            onClick={openCategoryModal}
+            aria-label="Add new category"
+          >
+            <span className="category-icon">+</span>
+            <span className="category-label">New</span>
+          </button>
+        </div>
       </div>
 
       {categoryId && (
-        <div className="field-group field-group--centered">
-          {tags.length > 0 && (
-            <>
-              <span className="field-label">Tags</span>
-              <div className="option-chips" role="group" aria-label="Select tags">
-                {tags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    className={`option-chip option-chip--tag ${selectedTagIds.includes(tag.id) ? 'selected' : ''}`}
-                    onClick={() => toggleTag(tag.id)}
-                  >
-                    {tag.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          <button type="button" className="add-category-link" onClick={openTagModal}>
-            + Add new tag
+        <div className="home-card-section home-card-section--tags">
+          <span className="field-label field-label--soft">Tags</span>
+          <div className="option-chips home-tag-chips" role="group" aria-label="Select tags">
+            {tags.map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                className={`option-chip option-chip--tag ${selectedTagIds.includes(tag.id) ? 'selected' : ''}`}
+                onClick={() => toggleTag(tag.id)}
+              >
+                {tag.label}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="text-link-btn" onClick={openTagModal}>
+            + Add tag
           </button>
         </div>
       )}
 
       {!showNoteField ? (
-        <button
-          type="button"
-          className="add-category-link"
-          onClick={() => setShowNoteField(true)}
-        >
-          + Add note (optional)
+        <button type="button" className="text-link-btn" onClick={() => setShowNoteField(true)}>
+          + Add note
         </button>
       ) : (
-        <div className="field-group field-group--centered">
-          <label htmlFor="expense-note" className="field-label">Note</label>
+        <div className="home-card-section">
+          <label htmlFor="expense-note" className="field-label field-label--soft">
+            Note
+          </label>
           <input
             id="expense-note"
             type="text"
-            className="text-input landing-control"
+            className="text-input home-note-input"
             placeholder="e.g. Lunch with team"
             value={note}
             onChange={(e) => {
@@ -270,17 +292,20 @@ export default function AddExpense({ profileId, categories }) {
         </div>
       )}
 
-      <div className="landing-actions">
+      <div className="home-card-footer">
         <button
           type="button"
-          className="primary-btn save-btn landing-control"
+          className="primary-btn home-card-save"
           disabled={!canSave}
           onClick={handleSave}
         >
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'Saving…' : 'Save expense'}
         </button>
-
-        {saved && <p className="success-toast" role="status">Saved</p>}
+        {saved && (
+          <p className="success-toast" role="status">
+            Saved successfully
+          </p>
+        )}
       </div>
 
       {showCategoryModal && (
@@ -292,10 +317,14 @@ export default function AddExpense({ profileId, categories }) {
             aria-labelledby="new-category-title"
           >
             <div className="sheet-handle" />
-            <h2 id="new-category-title" className="sheet-title">New Category</h2>
+            <h2 id="new-category-title" className="sheet-title">
+              New Category
+            </h2>
 
             <div className="field-group field-group--centered">
-              <label htmlFor="emoji" className="field-label">Emoji</label>
+              <label htmlFor="emoji" className="field-label">
+                Emoji
+              </label>
               <input
                 id="emoji"
                 type="text"
@@ -307,7 +336,9 @@ export default function AddExpense({ profileId, categories }) {
             </div>
 
             <div className="field-group field-group--centered">
-              <label htmlFor="cat-name" className="field-label">Name</label>
+              <label htmlFor="cat-name" className="field-label">
+                Name
+              </label>
               <input
                 id="cat-name"
                 type="text"
@@ -351,13 +382,17 @@ export default function AddExpense({ profileId, categories }) {
             aria-labelledby="new-tag-title"
           >
             <div className="sheet-handle" />
-            <h2 id="new-tag-title" className="sheet-title">New Tag</h2>
+            <h2 id="new-tag-title" className="sheet-title">
+              New Tag
+            </h2>
             <p className="sheet-subtitle">
               For {categories.find((c) => c.id === categoryId)?.label}
             </p>
 
             <div className="field-group field-group--centered">
-              <label htmlFor="tag-name" className="field-label">Name</label>
+              <label htmlFor="tag-name" className="field-label">
+                Name
+              </label>
               <input
                 id="tag-name"
                 type="text"
