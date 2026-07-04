@@ -58,6 +58,29 @@ export function formatDisplayDate(dateStr) {
   });
 }
 
+export function formatDatePill(dateStr) {
+  if (dateStr === todayISO()) {
+    return 'Today';
+  }
+  const [year, month, day] = dateStr.split('-');
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  return date.toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+export function addDaysISO(dateStr, days) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export function randomCategoryColor() {
   const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#A78BFA', '#F472B6', '#FB923C', '#34D399', '#60A5FA'];
   return colors[Math.floor(Math.random() * colors.length)];

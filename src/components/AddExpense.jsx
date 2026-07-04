@@ -2,7 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { addCategory } from '../utils/categories';
 import { createExpense } from '../utils/expenses';
 import { addTag, subscribeTags } from '../utils/tags';
-import { randomCategoryColor, todayISO, EXPENSE_NOTE_MAX } from '../utils/helpers';
+import {
+  addDaysISO,
+  formatDatePill,
+  randomCategoryColor,
+  todayISO,
+  EXPENSE_NOTE_MAX,
+} from '../utils/helpers';
 
 export default function AddExpense({ profileId, categories }) {
   const dateInputRef = useRef(null);
@@ -11,6 +17,7 @@ export default function AddExpense({ profileId, categories }) {
   const [categoryId, setCategoryId] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [tags, setTags] = useState([]);
+  const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -22,8 +29,6 @@ export default function AddExpense({ profileId, categories }) {
   const [newTagName, setNewTagName] = useState('');
   const [tagError, setTagError] = useState('');
   const [addingTag, setAddingTag] = useState(false);
-  const [showNoteField, setShowNoteField] = useState(false);
-  const [note, setNote] = useState('');
 
   useEffect(() => {
     if (!categoryId) {
@@ -46,6 +51,11 @@ export default function AddExpense({ profileId, categories }) {
     }
   }, []);
 
+  const shiftDate = (days) => {
+    setDate((current) => addDaysISO(current, days));
+    setSaved(false);
+  };
+
   const handleAmountChange = (e) => {
     const value = e.target.value;
     if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
@@ -67,14 +77,13 @@ export default function AddExpense({ profileId, categories }) {
         categoryId,
         date,
         tagIds: selectedTagIds,
-        note,
+        note: note.trim(),
       });
 
       setAmount('');
       setCategoryId('');
       setSelectedTagIds([]);
       setNote('');
-      setShowNoteField(false);
       setDate(todayISO());
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -180,126 +189,140 @@ export default function AddExpense({ profileId, categories }) {
   const canSave = amount && parseFloat(amount) > 0 && categoryId && !saving;
 
   return (
-    <section className="home-card fade-in">
-      <div className="add-date-wrap">
-        <label htmlFor="expense-date" className="add-date-field" onClick={openDatePicker}>
-          <input
-            ref={dateInputRef}
-            id="expense-date"
-            type="date"
-            className="text-input date-input add-date-input"
-            value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
-              setSaved(false);
-            }}
-            onClick={openDatePicker}
-            aria-label="Expense date"
-          />
-        </label>
-      </div>
+    <section className="add-expense fade-in">
+      <div className="quick-entry">
+        <div className="date-pill-nav">
+          <button
+            type="button"
+            className="date-shift-btn"
+            onClick={() => shiftDate(-1)}
+            aria-label="Previous day"
+          >
+            ‹
+          </button>
+          <label htmlFor="expense-date" className="date-pill" onClick={openDatePicker}>
+            <span className="date-pill-text">{formatDatePill(date)}</span>
+            <input
+              ref={dateInputRef}
+              id="expense-date"
+              type="date"
+              className="date-pill-input date-input"
+              value={date}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setSaved(false);
+              }}
+              onClick={openDatePicker}
+              aria-label="Expense date"
+            />
+          </label>
+          <button
+            type="button"
+            className="date-shift-btn"
+            onClick={() => shiftDate(1)}
+            aria-label="Next day"
+          >
+            ›
+          </button>
+        </div>
 
-      <div className="amount-section amount-section--hero">
-        <label htmlFor="amount" className="field-label field-label--soft">
-          Amount
-        </label>
-        <div className="amount-input-wrap">
-          <span className="currency-symbol">₹</span>
+        <div className="quick-entry-amount">
+          <span className="currency-symbol currency-symbol--hero">₹</span>
           <input
             id="amount"
             type="text"
             inputMode="decimal"
-            className="amount-input"
+            className="amount-input amount-input--hero"
             placeholder="0"
             value={amount}
             onChange={handleAmountChange}
             autoComplete="off"
+            aria-label="Amount"
           />
         </div>
       </div>
 
-      <div className="home-card-section">
-        <span className="field-label field-label--soft">Category</span>
-        <div className="category-grid category-grid--compact category-grid--4col">
+      <div className="add-expense-section add-expense-section--category">
+        <div className="category-grid category-grid--add" role="group" aria-label="Select category">
           {categories.map((cat) => (
             <button
               key={cat.id}
               type="button"
-              className={`category-chip category-chip--compact ${categoryId === cat.id ? 'selected' : ''}`}
+              className={`category-pill category-pill--grid ${categoryId === cat.id ? 'selected' : ''}`}
               style={{ '--cat-color': cat.color }}
               onClick={() => selectCategory(cat.id)}
               aria-pressed={categoryId === cat.id}
               title={cat.label}
             >
-              <span className="category-icon">{cat.icon}</span>
-              <span className="category-label">{cat.label}</span>
+              <span className="category-pill-icon">{cat.icon}</span>
+              <span className="category-pill-label">{cat.label}</span>
             </button>
           ))}
           <button
             type="button"
-            className="category-chip category-chip--compact add-new"
+            className="category-pill category-pill--grid category-pill--new"
             onClick={openCategoryModal}
             aria-label="Add new category"
           >
-            <span className="category-icon">+</span>
-            <span className="category-label">New</span>
+            <span className="category-pill-icon">+</span>
+            <span className="category-pill-label">New</span>
           </button>
         </div>
       </div>
 
       {categoryId && (
-        <div className="home-card-section home-card-section--tags">
-          <span className="field-label field-label--soft">Tags</span>
-          <div className="option-chips home-tag-chips" role="group" aria-label="Select tags">
+        <div className="add-expense-section add-expense-section--tags">
+          <span className="add-expense-note-label">Tags</span>
+          <div className="add-expense-tag-chips" role="group" aria-label="Select tags">
             {tags.map((tag) => (
               <button
                 key={tag.id}
                 type="button"
-                className={`option-chip option-chip--tag ${selectedTagIds.includes(tag.id) ? 'selected' : ''}`}
+                className={`add-expense-tag-chip ${selectedTagIds.includes(tag.id) ? 'selected' : ''}`}
                 onClick={() => toggleTag(tag.id)}
               >
                 {tag.label}
               </button>
             ))}
+            <button
+              type="button"
+              className="add-expense-tag-chip add-expense-tag-chip--new"
+              onClick={openTagModal}
+              aria-label="Add new tag"
+            >
+              + New
+            </button>
           </div>
-          <button type="button" className="text-link-btn" onClick={openTagModal}>
-            + Add tag
-          </button>
         </div>
       )}
 
-      {!showNoteField ? (
-        <button type="button" className="text-link-btn" onClick={() => setShowNoteField(true)}>
-          + Add note
-        </button>
-      ) : (
-        <div className="home-card-section">
-          <label htmlFor="expense-note" className="field-label field-label--soft">
-            Note
-          </label>
-          <input
-            id="expense-note"
-            type="text"
-            className="text-input home-note-input"
-            placeholder="e.g. Lunch with team"
-            value={note}
-            onChange={(e) => {
-              setNote(e.target.value);
-              setSaved(false);
-            }}
-            maxLength={EXPENSE_NOTE_MAX}
-          />
-        </div>
-      )}
+      <div className={`add-expense-section add-expense-section--note${categoryId ? ' add-expense-section--note-active' : ''}`}>
+        <label htmlFor="expense-note" className="add-expense-note-label">
+          Note <span className="add-expense-optional">(optional)</span>
+        </label>
+        <input
+          id="expense-note"
+          type="text"
+          className={`add-expense-note-input${categoryId ? ' add-expense-note-input--active' : ''}`}
+          placeholder={categoryId ? 'Add a note or #tag...' : 'Select a category first'}
+          value={note}
+          onChange={(e) => {
+            setNote(e.target.value);
+            setSaved(false);
+          }}
+          maxLength={EXPENSE_NOTE_MAX}
+          disabled={!categoryId}
+        />
+      </div>
 
-      <div className="home-card-footer">
+      <div className="add-expense-actions">
         <button
           type="button"
-          className="primary-btn home-card-save"
+          className="primary-btn add-expense-save"
           disabled={!canSave}
           onClick={handleSave}
         >
-          {saving ? 'Saving…' : 'Save expense'}
+          {saving ? 'Saving…' : '✓ Save expense'}
         </button>
         {saved && (
           <p className="success-toast" role="status">
