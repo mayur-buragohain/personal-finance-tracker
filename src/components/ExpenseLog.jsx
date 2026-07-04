@@ -418,39 +418,52 @@ export default function ExpenseLog({ profileId, expenses, categories }) {
                       >
                         {category.icon}
                       </div>
-                      <div className="expense-details">
-                        <span className="expense-category">{category.label}</span>
-                        {expense.note && (
-                          <span className="expense-note">{expense.note}</span>
-                        )}
-                        {expenseTags.length > 0 && (
-                          <div className="expense-tags">
-                            {expenseTags.map((tag) => (
-                              <span key={tag.id} className="expense-tag">
-                                {tag.label}
+                      <div className="expense-body">
+                        <div className="expense-primary-line">
+                          <span className="expense-category">{category.label}</span>
+                          {expense.note && (
+                            <>
+                              <span className="expense-primary-sep" aria-hidden="true">
+                                |
                               </span>
-                            ))}
+                              <span className="expense-note">{expense.note}</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="expense-meta-line">
+                          {expenseTags.length > 0 ? (
+                            <div className="expense-tags">
+                              {expenseTags.map((tag) => (
+                                <span key={tag.id} className="expense-tag">
+                                  {tag.label}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="expense-tags expense-tags--empty" aria-hidden="true" />
+                          )}
+                          <div className="expense-meta-actions">
+                            <span className="expense-amount">{formatINR(expense.amount)}</span>
+                            <button
+                              type="button"
+                              className="edit-btn"
+                              aria-label="Edit expense"
+                              onClick={() => setEditingExpense(expense)}
+                            >
+                              ✎
+                            </button>
+                            <button
+                              type="button"
+                              className="delete-btn expense-delete-btn"
+                              aria-label="Delete expense"
+                              onClick={() => handleDelete(expense)}
+                              disabled={isDeleting}
+                            >
+                              ✕
+                            </button>
                           </div>
-                        )}
+                        </div>
                       </div>
-                      <span className="expense-amount">{formatINR(expense.amount)}</span>
-                      <button
-                        type="button"
-                        className="edit-btn"
-                        aria-label="Edit expense"
-                        onClick={() => setEditingExpense(expense)}
-                      >
-                        ✎
-                      </button>
-                      <button
-                        type="button"
-                        className="delete-btn"
-                        aria-label="Delete expense"
-                        onClick={() => handleDelete(expense)}
-                        disabled={isDeleting}
-                      >
-                        ✕
-                      </button>
                     </div>
                   </li>
                 );

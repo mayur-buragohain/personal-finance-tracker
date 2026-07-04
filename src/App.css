@@ -1005,7 +1005,7 @@
 
 .expense-row-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 12px;
   background: var(--bg-elevated);
@@ -1023,6 +1023,45 @@
   font-size: 1.25rem;
   flex-shrink: 0;
   border: 1px solid;
+  align-self: center;
+}
+
+.expense-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.expense-primary-line {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  width: 100%;
+}
+
+.expense-primary-sep {
+  flex-shrink: 0;
+  padding: 0 0.45em;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.expense-meta-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.expense-meta-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .expense-details {
@@ -1036,6 +1075,7 @@
 .expense-category {
   font-weight: 600;
   font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .expense-tag {
@@ -1052,7 +1092,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.expense-tags--empty {
+  flex: 1;
+  min-height: 0;
 }
 
 .edit-btn {
@@ -1162,8 +1208,11 @@
 }
 
 .expense-note {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1179,6 +1228,14 @@
   font-size: 0.95rem;
   white-space: nowrap;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  padding-right: 2px;
+}
+
+.expense-delete-btn {
+  width: 36px;
+  height: 36px;
+  min-height: unset;
 }
 
 .delete-btn {
