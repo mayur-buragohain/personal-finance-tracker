@@ -334,8 +334,7 @@ export default function Report({ expenses, categories }) {
       )}
 
       <div className="report-section report-section--trend">
-        <h2 className="section-title">Monthly Expense Trend</h2>
-        <MonthlyTrendChart expenses={expenses} />
+        <MonthlyTrendChart expenses={expenses} categories={categories} />
       </div>
     </section>
   );

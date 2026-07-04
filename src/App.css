@@ -1627,6 +1627,42 @@
   border-top: 1px solid var(--border);
 }
 
+.monthly-trend-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.monthly-trend-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.monthly-trend-compare {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.monthly-trend-compare-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.monthly-trend-compare-select {
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+  min-height: 36px;
+  padding: 0 28px 0 10px;
+  font-size: 0.78rem;
+  background-position: right 8px center;
+}
+
 .monthly-trend-chart {
   width: 100%;
   padding: 8px 0 4px;
@@ -1646,8 +1682,17 @@
   stroke-width: 1;
 }
 
-.monthly-trend-line {
+.monthly-trend-line--total {
   filter: drop-shadow(0 0 6px rgba(108, 92, 231, 0.45));
+}
+
+.monthly-trend-line--category {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.monthly-trend-line--category.is-visible {
+  opacity: 1;
 }
 
 .monthly-trend-dot {
