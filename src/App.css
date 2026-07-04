@@ -1316,6 +1316,24 @@
 .section-title {
   font-size: 0.95rem;
   font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section-title--dynamic {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0;
+}
+
+.section-title-main {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section-title-period {
+  margin-left: 0.35em;
+  font-weight: 500;
   color: var(--text-secondary);
 }
 
@@ -1503,7 +1521,7 @@
 
 .top-expense-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 12px;
   background: var(--bg-elevated);
@@ -1517,6 +1535,30 @@
   color: var(--accent);
   width: 28px;
   flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.top-expense-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.top-expense-primary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.top-expense-primary-text {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  flex: 1;
 }
 
 .top-expense-info {
@@ -1530,19 +1572,43 @@
 .top-expense-cat {
   font-weight: 600;
   font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.top-expense-sep {
+  flex-shrink: 0;
+  padding: 0 0.45em;
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
 .top-expense-note {
-  font-size: 0.78rem;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-style: italic;
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.top-expense-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.top-expense-tags {
+  margin-top: 0;
+}
+
 .top-expense-date {
   font-size: 0.72rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
 .top-expense-amount {
@@ -1550,6 +1616,50 @@
   font-size: 0.9rem;
   white-space: nowrap;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Monthly trend chart */
+
+.report-section--trend {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.monthly-trend-chart {
+  width: 100%;
+  padding: 8px 0 4px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.monthly-trend-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.monthly-trend-baseline {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.monthly-trend-line {
+  filter: drop-shadow(0 0 6px rgba(108, 92, 231, 0.45));
+}
+
+.monthly-trend-dot {
+  fill: var(--accent);
+  stroke: var(--bg-elevated);
+  stroke-width: 2;
+}
+
+.monthly-trend-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font);
 }
 
 /* Admin */

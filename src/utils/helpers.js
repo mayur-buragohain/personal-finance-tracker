@@ -48,6 +48,31 @@ export function formatMonthLabel(monthKeyStr) {
   return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 }
 
+export function formatMonthTrendLabel(monthKeyStr) {
+  const [year, month] = monthKeyStr.split('-');
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  const monthName = date.toLocaleDateString('en-IN', { month: 'long' });
+  return `${monthName}-${year}`;
+}
+
+export function formatMonthShortLabel(monthKeyStr) {
+  const [year, month] = monthKeyStr.split('-');
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  return date.toLocaleDateString('en-IN', { month: 'short' });
+}
+
+export function getLastNMonthKeys(count, endMonthKey = monthKey(todayISO())) {
+  const [endYear, endMonth] = endMonthKey.split('-').map(Number);
+  const keys = [];
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const date = new Date(endYear, endMonth - 1 - i, 1);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    keys.push(`${y}-${m}`);
+  }
+  return keys;
+}
+
 export function formatDisplayDate(dateStr) {
   const [year, month, day] = dateStr.split('-');
   const date = new Date(Number(year), Number(month) - 1, Number(day));

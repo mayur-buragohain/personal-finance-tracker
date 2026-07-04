@@ -3,11 +3,13 @@ import {
   formatINR,
   formatDisplayDate,
   formatMonthLabel,
+  formatMonthTrendLabel,
   getExpenseTags,
   monthKey,
   resolveCategory,
   todayISO,
 } from '../utils/helpers';
+import MonthlyTrendChart from './MonthlyTrendChart';
 
 function buildCategoryTagBreakdown(categoryId, monthExpenses) {
   const tagTotals = {};
@@ -162,7 +164,7 @@ export default function Report({ expenses, categories }) {
       ) : (
         <>
           <div className="report-section">
-            <h2 className="section-title">By Category</h2>
+            <h2 className="section-title">Month Expense by Category</h2>
             <div className="bar-chart-list">
               {categoryBreakdown.map((item) => {
                 const isExpanded = expandedCategoryId === item.id;
@@ -260,7 +262,10 @@ export default function Report({ expenses, categories }) {
           </div>
 
           <div className="report-section">
-            <h2 className="section-title">Daily Spending</h2>
+            <h2 className="section-title section-title--dynamic">
+              <span className="section-title-main">Daily Spend Trend for</span>
+              <span className="section-title-period">{formatMonthTrendLabel(selectedMonth)}</span>
+            </h2>
             <div className="day-chart-scroll">
               <div className="day-chart">
                 {dayBreakdown.map((day) => (
@@ -285,19 +290,41 @@ export default function Report({ expenses, categories }) {
             <ul className="top-expenses-list">
               {topExpenses.map((expense, index) => {
                 const category = resolveCategory(expense, categoryMap);
+                const expenseTags = getExpenseTags(expense);
+
                 return (
                   <li key={expense.docId} className="top-expense-row">
                     <span className="top-rank">#{index + 1}</span>
-                    <div className="top-expense-info">
-                      <span className="top-expense-cat">
-                        {category.icon} {category.label}
-                      </span>
-                      {expense.note && (
-                        <span className="top-expense-note">{expense.note}</span>
-                      )}
-                      <span className="top-expense-date">{formatDisplayDate(expense.date)}</span>
+                    <div className="top-expense-body">
+                      <div className="top-expense-primary">
+                        <div className="top-expense-primary-text">
+                          <span className="top-expense-cat">
+                            {category.icon} {category.label}
+                          </span>
+                          {expense.note && (
+                            <>
+                              <span className="top-expense-sep" aria-hidden="true">
+                                |
+                              </span>
+                              <span className="top-expense-note">{expense.note}</span>
+                            </>
+                          )}
+                        </div>
+                        <span className="top-expense-amount">{formatINR(expense.amount)}</span>
+                      </div>
+                      <div className="top-expense-meta">
+                        <span className="top-expense-date">{formatDisplayDate(expense.date)}</span>
+                        {expenseTags.length > 0 && (
+                          <div className="expense-tags top-expense-tags">
+                            {expenseTags.map((tag) => (
+                              <span key={tag.id} className="expense-tag">
+                                {tag.label}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <span className="top-expense-amount">{formatINR(expense.amount)}</span>
                   </li>
                 );
               })}
@@ -305,6 +332,11 @@ export default function Report({ expenses, categories }) {
           </div>
         </>
       )}
+
+      <div className="report-section report-section--trend">
+        <h2 className="section-title">Monthly Expense Trend</h2>
+        <MonthlyTrendChart expenses={expenses} />
+      </div>
     </section>
   );
 }
