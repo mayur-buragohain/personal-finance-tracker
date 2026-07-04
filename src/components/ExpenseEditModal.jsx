@@ -52,6 +52,7 @@ export default function ExpenseEditModal({
   }, [categoryId]);
 
   useEffect(() => {
+    if (categoryTags.length === 0) return;
     setSelectedTagIds((prev) =>
       prev.filter((id) => categoryTags.some((t) => t.id === id))
     );
