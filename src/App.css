@@ -420,18 +420,20 @@
   min-height: unset;
   padding: 3px 9px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   background: var(--bg-elevated);
   font-size: 0.72rem;
   font-weight: 500;
   color: var(--text-primary);
-  transition: border-color var(--transition), background var(--transition), color var(--transition);
+  transition: border-color var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition);
 }
 
 .add-expense-tag-chip.selected {
-  border-color: rgba(108, 92, 231, 0.45);
-  background: rgba(108, 92, 231, 0.12);
-  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #12121a;
+  font-weight: 600;
+  box-shadow: 0 2px 10px var(--accent-glow);
 }
 
 .add-expense-tag-chip--new {
@@ -1667,19 +1669,44 @@
 /* Bulk entry */
 
 .bulk-expense {
-  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.bulk-expense-header {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 2px;
+}
+
+.bulk-expense-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .bulk-rows-header {
-  display: grid;
-  grid-template-columns: 88px 1fr 36px;
+  display: flex;
   gap: 8px;
   padding: 0 4px;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.bulk-rows-header span:first-child {
+  flex: 0 0 5rem;
+}
+
+.bulk-rows-header span:nth-child(2) {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.bulk-rows-header span:last-child {
+  flex: 0 0 36px;
 }
 
 .bulk-rows {
@@ -1694,76 +1721,110 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px;
-  background: var(--bg-elevated);
-  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .bulk-row {
-  display: grid;
-  grid-template-columns: 88px 1fr 36px;
+  display: flex;
   gap: 8px;
   align-items: center;
 }
 
 .bulk-amount-input {
+  flex: 0 0 5rem;
+  width: 5rem;
   min-height: 44px;
-  padding: 0 10px;
+  padding: 0 8px;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   text-align: right;
+  border-color: var(--border);
+}
+
+.bulk-amount-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
 }
 
 .bulk-category-select {
+  flex: 1 1 0;
+  min-width: 0;
   min-height: 44px;
   padding: 0 32px 0 10px;
   font-size: 0.85rem;
   background-position: right 10px center;
 }
 
+.bulk-category-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
+}
+
 .bulk-remove-btn {
+  flex: 0 0 36px;
   width: 36px;
   height: 36px;
 }
 
 .bulk-row-tags {
-  padding-top: 2px;
+  padding-top: 6px;
   border-top: 1px solid var(--border);
 }
 
 .bulk-tag-chips {
-  justify-content: flex-start;
+  gap: 5px;
+}
+
+.bulk-add-row-bar {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(108, 92, 231, 0.28);
 }
 
 .bulk-add-row {
   align-self: flex-start;
-  margin-top: 4px;
+  padding: 8px 14px;
+  border: 2px dashed rgba(108, 92, 231, 0.55);
+  background: rgba(108, 92, 231, 0.1);
+  color: var(--text-primary);
 }
 
-.bulk-footer {
+.bulk-add-row:hover {
+  border-color: var(--accent);
+  background: rgba(108, 92, 231, 0.18);
+  color: var(--text-primary);
+}
+
+.bulk-expense-actions {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 8px;
+}
+
+.bulk-expense-actions .success-toast {
+  color: #4ade80;
+  font-size: 0.95rem;
 }
 
 .bulk-total {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
+  font-size: 1rem;
+  color: var(--text-primary);
 }
 
 .bulk-total strong {
-  color: var(--accent);
+  color: var(--text-primary);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .bulk-total-count {
-  margin-left: 6px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.bulk-submit-btn {
-  width: 100%;
+  margin-left: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }

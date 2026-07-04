@@ -151,6 +151,7 @@ VITE_SUPABASE_ANON_KEY=your_anon_key`}</pre>
   }
 
   const isHome = activeTab === 'home';
+  const isBulk = activeTab === 'bulk';
 
   return (
     <div className="app-shell">
@@ -164,7 +165,7 @@ VITE_SUPABASE_ANON_KEY=your_anon_key`}</pre>
         </p>
       </header>
 
-      <main className={`app-main ${isHome ? 'app-main--home' : ''}`}>
+      <main className={`app-main ${isHome || isBulk ? 'app-main--home' : ''}`}>
         {activeTab === 'home' && (
           <AddExpense profileId={activeProfile.id} categories={categories} />
         )}

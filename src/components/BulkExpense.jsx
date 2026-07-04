@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createExpensesBulk } from '../utils/expenses';
 import { subscribeTags } from '../utils/tags';
 import { formatINR, todayISO } from '../utils/helpers';
+import DatePillNav from './DatePillNav';
 
 function emptyRow() {
   return { id: crypto.randomUUID(), amount: '', categoryId: '', tagIds: [] };
@@ -64,12 +65,12 @@ function BulkExpenseRow({
 
       {row.categoryId && tags.length > 0 && (
         <div className="bulk-row-tags">
-          <div className="option-chips bulk-tag-chips" role="group" aria-label={`Tags for ${categoryLabel}`}>
+          <div className="add-expense-tag-chips bulk-tag-chips" role="group" aria-label={`Tags for ${categoryLabel}`}>
             {tags.map((tag) => (
               <button
                 key={tag.id}
                 type="button"
-                className={`option-chip option-chip--tag ${row.tagIds.includes(tag.id) ? 'selected' : ''}`}
+                className={`add-expense-tag-chip ${row.tagIds.includes(tag.id) ? 'selected' : ''}`}
                 onClick={() => onToggleTag(row.id, tag.id)}
               >
                 {tag.label}
@@ -176,52 +177,63 @@ export default function BulkExpense({ profileId, categories }) {
 
   const canSubmit = validRows.length > 0 && !saving;
 
+  const submitLabel = saving
+    ? 'Saving…'
+    : validRows.length > 0
+      ? `✓ Submit ${validRows.length} expense${validRows.length !== 1 ? 's' : ''}`
+      : 'Submit';
+
   return (
-    <section className="panel bulk-expense fade-in">
-      <div className="field-group">
-        <label htmlFor="bulk-date" className="field-label">Date</label>
-        <input
+    <section className="bulk-expense fade-in">
+      <div className="bulk-expense-header">
+        <DatePillNav
           id="bulk-date"
-          type="date"
-          className="text-input date-input"
-          value={date}
-          onChange={(e) => {
-            setDate(e.target.value);
+          date={date}
+          onChange={(value) => {
+            setDate(value);
             clearStatus();
           }}
         />
       </div>
 
-      <div className="bulk-rows-header" aria-hidden="true">
-        <span>Amount</span>
-        <span>Category</span>
-        <span />
+      <div className="bulk-expense-section">
+        <div className="bulk-rows-header" aria-hidden="true">
+          <span>Amount</span>
+          <span>Category</span>
+          <span />
+        </div>
+
+        <ul className="bulk-rows">
+          {rows.map((row) => (
+            <BulkExpenseRow
+              key={row.id}
+              row={row}
+              categories={categories}
+              onAmountChange={handleAmountChange}
+              onCategoryChange={handleCategoryChange}
+              onToggleTag={handleToggleTag}
+              onRemove={removeRow}
+            />
+          ))}
+        </ul>
+
+        <div className="bulk-add-row-bar">
+          <button
+            type="button"
+            className="add-expense-tag-chip add-expense-tag-chip--new bulk-add-row"
+            onClick={addRow}
+          >
+            + Add row
+          </button>
+        </div>
       </div>
 
-      <ul className="bulk-rows">
-        {rows.map((row) => (
-          <BulkExpenseRow
-            key={row.id}
-            row={row}
-            categories={categories}
-            onAmountChange={handleAmountChange}
-            onCategoryChange={handleCategoryChange}
-            onToggleTag={handleToggleTag}
-            onRemove={removeRow}
-          />
-        ))}
-      </ul>
-
-      <button type="button" className="add-category-link bulk-add-row" onClick={addRow}>
-        + Add row
-      </button>
-
-      <div className="bulk-footer">
+      <div className="bulk-expense-actions">
         {validRows.length > 0 && (
           <p className="bulk-total">
-            Total: <strong>{formatINR(total)}</strong>
+            <strong>{formatINR(total)}</strong>
             <span className="bulk-total-count">
-              ({validRows.length} expense{validRows.length !== 1 ? 's' : ''})
+              · {validRows.length} expense{validRows.length !== 1 ? 's' : ''}
             </span>
           </p>
         )}
@@ -235,15 +247,11 @@ export default function BulkExpense({ profileId, categories }) {
 
         <button
           type="button"
-          className="primary-btn bulk-submit-btn"
+          className="primary-btn add-expense-save"
           disabled={!canSubmit}
           onClick={handleSubmit}
         >
-          {saving
-            ? 'Saving…'
-            : validRows.length > 0
-              ? `Submit ${validRows.length} expense${validRows.length !== 1 ? 's' : ''}`
-              : 'Submit'}
+          {submitLabel}
         </button>
       </div>
     </section>

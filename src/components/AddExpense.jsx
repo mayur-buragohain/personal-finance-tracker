@@ -1,17 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { addCategory } from '../utils/categories';
 import { createExpense } from '../utils/expenses';
 import { addTag, subscribeTags } from '../utils/tags';
-import {
-  addDaysISO,
-  formatDatePill,
-  randomCategoryColor,
-  todayISO,
-  EXPENSE_NOTE_MAX,
-} from '../utils/helpers';
+import { randomCategoryColor, todayISO, EXPENSE_NOTE_MAX } from '../utils/helpers';
+import DatePillNav from './DatePillNav';
 
 export default function AddExpense({ profileId, categories }) {
-  const dateInputRef = useRef(null);
   const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -37,24 +31,6 @@ export default function AddExpense({ profileId, categories }) {
     }
     return subscribeTags(categoryId, setTags);
   }, [categoryId]);
-
-  const openDatePicker = useCallback(() => {
-    const input = dateInputRef.current;
-    if (!input) return;
-    input.focus({ preventScroll: true });
-    if (typeof input.showPicker === 'function') {
-      try {
-        input.showPicker();
-      } catch {
-        /* showPicker unavailable or blocked */
-      }
-    }
-  }, []);
-
-  const shiftDate = (days) => {
-    setDate((current) => addDaysISO(current, days));
-    setSaved(false);
-  };
 
   const handleAmountChange = (e) => {
     const value = e.target.value;
@@ -191,40 +167,14 @@ export default function AddExpense({ profileId, categories }) {
   return (
     <section className="add-expense fade-in">
       <div className="quick-entry">
-        <div className="date-pill-nav">
-          <button
-            type="button"
-            className="date-shift-btn"
-            onClick={() => shiftDate(-1)}
-            aria-label="Previous day"
-          >
-            ‹
-          </button>
-          <label htmlFor="expense-date" className="date-pill" onClick={openDatePicker}>
-            <span className="date-pill-text">{formatDatePill(date)}</span>
-            <input
-              ref={dateInputRef}
-              id="expense-date"
-              type="date"
-              className="date-pill-input date-input"
-              value={date}
-              onChange={(e) => {
-                setDate(e.target.value);
-                setSaved(false);
-              }}
-              onClick={openDatePicker}
-              aria-label="Expense date"
-            />
-          </label>
-          <button
-            type="button"
-            className="date-shift-btn"
-            onClick={() => shiftDate(1)}
-            aria-label="Next day"
-          >
-            ›
-          </button>
-        </div>
+        <DatePillNav
+          id="expense-date"
+          date={date}
+          onChange={(value) => {
+            setDate(value);
+            setSaved(false);
+          }}
+        />
 
         <div className="quick-entry-amount">
           <span className="currency-symbol currency-symbol--hero">₹</span>
